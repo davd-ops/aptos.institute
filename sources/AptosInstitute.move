@@ -10,7 +10,6 @@ module aptos_institute::developer_cv {
     use aptos_token::token::{Self, TokenDataId};
     use aptos_framework::resource_account;
 
-
     #[event]
     struct DeveloperNftMintedEvent has drop, store {
         developer_address: address,
@@ -20,8 +19,8 @@ module aptos_institute::developer_cv {
     #[event]
     struct DeveloperStatsUpdatedEvent has drop, store {
         developer_address: address,
-        updated_points: u64,
-        quest_status: bool,
+        quest_id: u64,
+        points: u64,
     }
 
     struct ModuleData has key {
@@ -32,15 +31,17 @@ module aptos_institute::developer_cv {
     }
 
     struct DeveloperCV has key, store {
-        points: u64,
-        quest_progress: vector<bool>,  // Track quest completions (true for complete, false for failed)
+        points: u64,  // Total points across all quests
+        quest_points: vector<u64>,  // Points for each quest (indexed by quest ID)
     }
 
     const EINVALID_ADMIN_SIGNATURE: u64 = 1;
     const ENOT_AUTHORIZED: u64 = 2;
+    const EINVALID_QUEST_ID: u64 = 3;
+    const EPOINTS_EXCEED_LIMIT: u64 = 4;
 
     /// Initialize the module with a hardcoded public key
-    fun init_module(resource_signer: &signer) {
+    public entry fun init_module(resource_signer: &signer) {
         let signer_cap = resource_account::retrieve_resource_account_cap(resource_signer, @source_addr);
 
         // Hardcoded public key - this will be updated later by calling `set_public_key`
@@ -95,10 +96,10 @@ module aptos_institute::developer_cv {
         let token_id = token::mint_token(&resource_signer, module_data.token_data_id, 1);
         token::direct_transfer(&resource_signer, developer, token_id, 1);
 
-        // Initialize developer's stats
+        // Initialize developer's stats with 0 points and an empty quest vector
         move_to(developer, DeveloperCV {
             points: 0,
-            quest_progress: vector::empty<bool>(),  // No quests completed at the start
+            quest_points: vector::empty<u64>(),
         });
 
         // Emit the event for tracking the minted NFT
@@ -112,7 +113,7 @@ module aptos_institute::developer_cv {
     public entry fun update_developer_stats(
         admin: &signer,
         developer_address: address,
-        quest_completed: bool,
+        quest_id: u64,
         points_earned: u64,
         admin_signature: vector<u8>
     ) acquires ModuleData, DeveloperCV {
@@ -132,14 +133,26 @@ module aptos_institute::developer_cv {
 
         // Update developer stats
         let dev_cv = borrow_global_mut<DeveloperCV>(developer_address);
+
+        // Ensure the quest_id is valid (if it doesn't exist, expand the vector)
+        if (quest_id as u64) >= vector::length(&dev_cv.quest_points) {
+            vector::push_back(&mut dev_cv.quest_points, 0);
+        }
+
+        // Ensure the total points for this quest do not exceed 10
+        let current_points = *vector::borrow(&dev_cv.quest_points, quest_id as u64);
+        let new_points = current_points + points_earned;
+        assert!(new_points <= 10, error::invalid_argument(EPOINTS_EXCEED_LIMIT));
+
+        // Update quest-specific points and total points
+        *vector::borrow_mut(&mut dev_cv.quest_points, quest_id as u64) = new_points;
         dev_cv.points = dev_cv.points + points_earned;
-        vector::push_back(&mut dev_cv.quest_progress, quest_completed);
 
         // Emit an event for tracking the stats update
         event::emit(DeveloperStatsUpdatedEvent {
             developer_address,
-            updated_points: dev_cv.points,
-            quest_status: quest_completed,
+            quest_id,
+            points: new_points,
         });
     }
 
