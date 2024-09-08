@@ -41,7 +41,7 @@ module aptos_institute::developer_cv {
     const EPOINTS_EXCEED_LIMIT: u64 = 4;
 
     /// Initialize the module with a hardcoded public key
-    public entry fun init_module(resource_signer: &signer) {
+    fun init_module(resource_signer: &signer) {
         let signer_cap = resource_account::retrieve_resource_account_cap(resource_signer, @source_addr);
 
         // Hardcoded public key - this will be updated later by calling `set_public_key`
@@ -135,17 +135,17 @@ module aptos_institute::developer_cv {
         let dev_cv = borrow_global_mut<DeveloperCV>(developer_address);
 
         // Ensure the quest_id is valid (if it doesn't exist, expand the vector)
-        if (quest_id as u64) >= vector::length(&dev_cv.quest_points) {
+        if (quest_id >= vector::length(&dev_cv.quest_points)) {
             vector::push_back(&mut dev_cv.quest_points, 0);
-        }
+        };
 
         // Ensure the total points for this quest do not exceed 10
-        let current_points = *vector::borrow(&dev_cv.quest_points, quest_id as u64);
+        let current_points = *vector::borrow(&dev_cv.quest_points, quest_id);
         let new_points = current_points + points_earned;
         assert!(new_points <= 10, error::invalid_argument(EPOINTS_EXCEED_LIMIT));
 
         // Update quest-specific points and total points
-        *vector::borrow_mut(&mut dev_cv.quest_points, quest_id as u64) = new_points;
+        *vector::borrow_mut(&mut dev_cv.quest_points, quest_id) = new_points;
         dev_cv.points = dev_cv.points + points_earned;
 
         // Emit an event for tracking the stats update
@@ -155,6 +155,7 @@ module aptos_institute::developer_cv {
             points: new_points,
         });
     }
+
 
     /// Enable/Disable NFT minting (Admin Only)
     public entry fun set_minting_enabled(admin: &signer, enabled: bool) acquires ModuleData {
