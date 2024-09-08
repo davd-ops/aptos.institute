@@ -5,10 +5,13 @@ module aptos_institute::developer_cv {
     use std::vector;
     use aptos_framework::account;
     use aptos_framework::event;
-    use aptos_framework::timestamp;
     use aptos_std::ed25519;
     use aptos_token::token::{Self, TokenDataId};
     use aptos_framework::resource_account;
+    use aptos_framework::object;
+    use aptos_framework::fungible_asset::{Self as FA, MintRef};
+    use aptos_framework::primary_fungible_store;
+    use std::option;
 
     #[event]
     struct DeveloperNftMintedEvent has drop, store {
@@ -21,6 +24,7 @@ module aptos_institute::developer_cv {
         developer_address: address,
         quest_id: u64,
         points: u64,
+        tokens_earned: u64,
     }
 
     struct ModuleData has key {
@@ -28,6 +32,7 @@ module aptos_institute::developer_cv {
         signer_cap: account::SignerCapability,
         token_data_id: TokenDataId,
         minting_enabled: bool,
+        quest_token_mint_ref: MintRef, // Using MintRef from FA standard
     }
 
     struct DeveloperCV has key, store {
@@ -35,12 +40,15 @@ module aptos_institute::developer_cv {
         quest_points: vector<u64>,  // Points for each quest (indexed by quest ID)
     }
 
+    /// Quest Token struct (Fungible Token)
+    struct QuestToken has key { }
+
     const EINVALID_ADMIN_SIGNATURE: u64 = 1;
     const ENOT_AUTHORIZED: u64 = 2;
     const EINVALID_QUEST_ID: u64 = 3;
     const EPOINTS_EXCEED_LIMIT: u64 = 4;
 
-    /// Initialize the module with a hardcoded public key
+    /// Initialize the module with a hardcoded public key and create fungible asset (FA)
     fun init_module(resource_signer: &signer) {
         let signer_cap = resource_account::retrieve_resource_account_cap(resource_signer, @source_addr);
 
@@ -65,12 +73,29 @@ module aptos_institute::developer_cv {
             vector<String>[string::utf8(b"address")]
         );
 
+        // Create the fungible asset (FA) metadata object using FA standard
+        let constructor_ref = object::create_sticky_object(signer::address_of(resource_signer));
+
+        primary_fungible_store::create_primary_store_enabled_fungible_asset(
+            &constructor_ref,
+            option::none(), // No maximum supply
+            string::utf8(b"Quest Token"), // Name
+            string::utf8(b"QT"), // Symbol
+            8, // Decimals
+            string::utf8(b"https://example.com/token.png"), // Icon URL
+            string::utf8(b"https://example.com") // Project URL
+        );
+
+        // Generate the MintRef to enable minting
+        let mint_ref = FA::generate_mint_ref(&constructor_ref);
+
         // Store module data
         move_to(resource_signer, ModuleData {
             admin_public_key: public_key,
             signer_cap,
             token_data_id,
             minting_enabled: true,
+            quest_token_mint_ref: mint_ref, // Store the MintRef for future minting
         });
     }
 
@@ -109,19 +134,16 @@ module aptos_institute::developer_cv {
         });
     }
 
-    /// Admin updates the developer's CV after quest completion
+    /// Admin updates the developer's CV after quest completion and awards tokens
     public entry fun update_developer_stats(
-        admin: &signer,
         developer_address: address,
         quest_id: u64,
         points_earned: u64,
         admin_signature: vector<u8>
     ) acquires ModuleData, DeveloperCV {
-        let admin_address = signer::address_of(admin);
         let module_data = borrow_global<ModuleData>(@aptos_institute);
 
         // Verify admin's signature
-        let sequence_number = account::get_sequence_number(admin_address);
         let challenge = b"update_developer_stats";
         let signature = ed25519::new_signature_from_bytes(admin_signature);
         let public_key = ed25519::public_key_to_unvalidated(&module_data.admin_public_key);
@@ -144,18 +166,28 @@ module aptos_institute::developer_cv {
         let new_points = current_points + points_earned;
         assert!(new_points <= 10, error::invalid_argument(EPOINTS_EXCEED_LIMIT));
 
+        // Calculate points improvement and award tokens
+        let points_improved = new_points - current_points;
+        let tokens_to_award = points_improved * 10;
+
         // Update quest-specific points and total points
         *vector::borrow_mut(&mut dev_cv.quest_points, quest_id) = new_points;
-        dev_cv.points = dev_cv.points + points_earned;
+        dev_cv.points = dev_cv.points + points_improved;
 
-        // Emit an event for tracking the stats update
+        // Mint tokens to developer
+        let minted_tokens = FA::mint(&module_data.quest_token_mint_ref, tokens_to_award);
+
+        // Deposit the minted tokens into the developer's account
+        primary_fungible_store::deposit(developer_address, minted_tokens);
+
+        // Emit an event for tracking the stats update and token award
         event::emit(DeveloperStatsUpdatedEvent {
             developer_address,
             quest_id,
             points: new_points,
+            tokens_earned: tokens_to_award,
         });
     }
-
 
     /// Enable/Disable NFT minting (Admin Only)
     public entry fun set_minting_enabled(admin: &signer, enabled: bool) acquires ModuleData {
