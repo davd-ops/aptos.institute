@@ -161,11 +161,18 @@ module aptos_institute::developer_cv {
             vector::push_back(&mut dev_cv.quest_points, 0);
         };
 
-        // Ensure the total points for this quest do not exceed 10
+        // Get the current points for the quest
         let current_points = *vector::borrow(&dev_cv.quest_points, quest_id);
-        let new_points = current_points + points_earned;
-        assert!(new_points <= 10, error::invalid_argument(EPOINTS_EXCEED_LIMIT));
 
+        // If the new score is less than or equal to the current score, do nothing
+        if (points_earned <= current_points) {
+            return;
+        };
+
+        // Ensure the total points for this quest do not exceed 10
+        let new_points = points_earned;
+        assert!(new_points <= 10, error::invalid_argument(EPOINTS_EXCEED_LIMIT));
+    
         // Calculate points improvement and award tokens
         let points_improved = new_points - current_points;
         let tokens_to_award = points_improved * 10;
