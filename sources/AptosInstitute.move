@@ -166,7 +166,7 @@ module aptos_institute::developer_cv {
 
         // If the new score is less than or equal to the current score, do nothing
         if (points_earned <= current_points) {
-            return;
+            return
         };
 
         // Ensure the total points for this quest do not exceed 10

@@ -1,13 +1,13 @@
-[package]
-name = "aptos_institute"
-version = "0.1.0"
+    [package]
+    name = "aptos_institute"
+    version = "0.1.0"
 
-[dependencies]
-AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", rev = "mainnet", subdir = "aptos-move/framework/aptos-framework" }
-AptosToken = { git = "https://github.com/aptos-labs/aptos-core.git", rev = "mainnet", subdir = "aptos-move/framework/aptos-token" }
+    [dependencies]
+    AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", rev = "mainnet", subdir = "aptos-move/framework/aptos-framework" }
+    AptosToken = { git = "https://github.com/aptos-labs/aptos-core.git", rev = "mainnet", subdir = "aptos-move/framework/aptos-token" }
 
-[addresses]
-# replace the admin_addr with the actual admin address we created using CLI
-admin_addr = "0xbeef"
-source_addr="0x2"
-aptos_institute="0x2"
+    [addresses]
+    # replace the admin_addr with the actual admin address
+    admin_addr = "0x50a1c95f48059ee74cdd2dcc0b0eb60c0547ae37fef5b7231feb014a0c36baa1"
+    source_addr="0x1"
+    aptos_institute="0x50a1c95f48059ee74cdd2dcc0b0eb60c0547ae37fef5b7231feb014a0c36baa1"
