@@ -1,12 +1,12 @@
 "use client";
-import petraConnect from "./components/petraConnect";
+import walletConnect from "./components/walletConnector";
 
 export default function Home() {
   return (
     <>
       <h1>Aptos Institute</h1>
       <p>Hackathon project on Aptos</p>
-      {petraConnect()}
+      {walletConnect()}
     </>
   );
 }
