@@ -9,5 +9,5 @@
     [addresses]
     # replace the admin_addr with the actual admin address
     admin_addr = "0x50a1c95f48059ee74cdd2dcc0b0eb60c0547ae37fef5b7231feb014a0c36baa1"
-    source_addr="0x1"
+    source_addr="0x357017d43fab9fb7f46f097c69dc27cb1472ecddb28090f1652dbb1b3f604527"
     aptos_institute="0x50a1c95f48059ee74cdd2dcc0b0eb60c0547ae37fef5b7231feb014a0c36baa1"
