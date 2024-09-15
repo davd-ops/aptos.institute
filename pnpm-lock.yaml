@@ -17,6 +17,9 @@ dependencies:
   '@emotion/styled':
     specifier: ^11.13.0
     version: 11.13.0(@emotion/react@11.13.3)(@types/react@18.0.0)(react@18.0.0)
+  '@monaco-editor/react':
+    specifier: ^4.6.0
+    version: 4.6.0(monaco-editor@0.51.0)(react-dom@18.0.0)(react@18.0.0)
   aptos:
     specifier: ^1.21.0
     version: 1.21.0
@@ -32,6 +35,9 @@ dependencies:
   jsonwebtoken:
     specifier: ^9.0.2
     version: 9.0.2
+  monaco-editor:
+    specifier: ^0.51.0
+    version: 0.51.0
   mongodb:
     specifier: ^6.9.0
     version: 6.9.0
@@ -1495,6 +1501,28 @@ packages:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.0
+    dev: false
+
+  /@monaco-editor/loader@1.4.0(monaco-editor@0.51.0):
+    resolution: {integrity: sha512-00ioBig0x642hytVspPl7DbQyaSWRaolYie/UFNjoTdvoKPzo6xrXLhTk9ixgIKcLH5b5vDOjVNiGyY+uDCUlg==}
+    peerDependencies:
+      monaco-editor: '>= 0.21.0 < 1'
+    dependencies:
+      monaco-editor: 0.51.0
+      state-local: 1.0.7
+    dev: false
+
+  /@monaco-editor/react@4.6.0(monaco-editor@0.51.0)(react-dom@18.0.0)(react@18.0.0):
+    resolution: {integrity: sha512-RFkU9/i7cN2bsq/iTkurMWOEErmYcY6JiQI3Jn+WeR/FGISH8JbHERjpS9oRuSOPvDMJI0Z8nJeKkbOs9sBYQw==}
+    peerDependencies:
+      monaco-editor: '>= 0.25.0 < 1'
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      '@monaco-editor/loader': 1.4.0(monaco-editor@0.51.0)
+      monaco-editor: 0.51.0
+      react: 18.0.0
+      react-dom: 18.0.0(react@18.0.0)
     dev: false
 
   /@mongodb-js/saslprep@1.1.9:
@@ -3803,6 +3831,10 @@ packages:
     engines: {node: '>=16 || 14 >=14.17'}
     dev: true
 
+  /monaco-editor@0.51.0:
+    resolution: {integrity: sha512-xaGwVV1fq343cM7aOYB6lVE4Ugf0UyimdD/x5PWcWBMKENwectaEu77FAN7c5sFiyumqeJdX1RPTh1ocioyDjw==}
+    dev: false
+
   /mongodb-connection-string-url@3.0.1:
     resolution: {integrity: sha512-XqMGwRX0Lgn05TDB4PyG2h2kKO/FfWJyCzYQbIhXUxz7ETt0I/FqHjUeqj37irJ+Dl1ZtU82uYyj14u2XsZKfg==}
     dependencies:
@@ -4467,6 +4499,10 @@ packages:
     resolution: {integrity: sha512-kvzhi7vqKTfkh0PZU+2D2PIllw2ymqJKujUcyPMd9Y75Nv4nPbGJZXNhxsgdQab2BmlDct1YnfQCguEvHr7VsQ==}
     dependencies:
       memory-pager: 1.5.0
+    dev: false
+
+  /state-local@1.0.7:
+    resolution: {integrity: sha512-HTEHMNieakEnoe33shBYcZ7NX83ACUjCu8c40iOGEZsngj9zRnkqS9j1pqQPXwobB0ZcVTk27REb7COQ0UR59w==}
     dev: false
 
   /stop-iteration-iterator@1.0.0:
