@@ -16,9 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={fonts.rubik.variable}>
       <body>
-        <Providers>
-          <Box mx="5">{children}</Box>
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

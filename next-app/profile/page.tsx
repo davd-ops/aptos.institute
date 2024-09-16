@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Navbar from "@/app/components/Navbar";
 
 interface ProfileProps {
   address: string;
@@ -49,7 +50,8 @@ const Profile = () => {
   }
 
   return (
-    <div>
+    <>
+      <Navbar />
       <h1>User Profile</h1>
       <p>
         <strong>Wallet Address:</strong> {profile.address}
@@ -57,7 +59,7 @@ const Profile = () => {
       <p>
         <strong>Username:</strong> {profile.userName}
       </p>
-    </div>
+    </>
   );
 };
 
