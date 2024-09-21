@@ -52,10 +52,11 @@ const walletConnect = (): WalletConnectReturn => {
       const response = await window.aptos.connect();
       setAddress(response.address);
       await fetchNonce();
-    } catch (error) {
+      } catch (error) {
       console.error("Error connecting to Petra Wallet:", error);
     }
   };
+  
 
   const fetchNonce = async (): Promise<void> => {
     try {
@@ -167,6 +168,7 @@ const walletConnect = (): WalletConnectReturn => {
       if (data.success) {
         setAddress(null);
         setIsLoggedIn(false);
+        setVerificationStatus(null);
         console.log("Logged out successfully");
       } else {
         console.error("Failed to log out.");
@@ -175,6 +177,7 @@ const walletConnect = (): WalletConnectReturn => {
       console.error("Error during disconnect and logout:", error);
     }
   };
+
 
   useEffect(() => {
     if (address && nonce && !signedMessage) {

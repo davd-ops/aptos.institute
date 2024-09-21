@@ -21,12 +21,18 @@ export async function GET(req: NextRequest) {
 
     if (!progress.length) {
       return NextResponse.json(
-        { success: true, progress: [] },
+        { success: true, progress: [], completedChallenges: 0 },
         { status: 200 }
       );
     }
 
-    return NextResponse.json({ success: true, progress }, { status: 200 });
+    const completedChallenges = progress.filter((p) => p.completed).length;
+
+    return NextResponse.json({
+      success: true,
+      progress,
+      completedChallenges,
+    });
   } catch (error) {
     console.error("Error fetching user progress:", error);
     return NextResponse.json(

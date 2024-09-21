@@ -1,16 +1,25 @@
 import {
   Box,
+  Button,
   Flex,
   Heading,
-  Text,
-  Button,
-  IconButton,
   HStack,
   VStack,
+  Text,
+  IconButton,
+  AlertDialog,
+  AlertDialogOverlay,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogBody,
+  AlertDialogFooter,
+  useDisclosure,
 } from "@chakra-ui/react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+import walletConnect from "@/app/hooks/walletConnect";
 
 const featuredCourses = [
   {
@@ -19,6 +28,7 @@ const featuredCourses = [
       "Learn the fundamentals of Aptos and its blockchain ecosystem.",
     buttonText: "Start Now",
     imageUrl: "/images/aptos.png",
+    courseId: "course_1",
   },
   {
     title: "Move: Writing Secure Smart Contracts",
@@ -26,6 +36,7 @@ const featuredCourses = [
       "Master the Move programming language and write secure smart contracts.",
     buttonText: "Start Now",
     imageUrl: "/images/aptos.png",
+    courseId: "course_2",
   },
   {
     title: "Aptos Advanced: Scalable Blockchain Solutions",
@@ -33,12 +44,18 @@ const featuredCourses = [
       "Dive deeper into Aptos' advanced features and scalability solutions.",
     buttonText: "Start Now",
     imageUrl: "/images/aptos.png",
+    courseId: "course_3",
   },
 ];
 
 const FeaturedCourses = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const router = useRouter();
+  const { isLoggedIn, connectWallet } = walletConnect();
+  const [pendingCourse, setPendingCourse] = useState<string | null>(null);
 
   const handleNext = () => {
     setDirection(1);
@@ -52,7 +69,29 @@ const FeaturedCourses = () => {
     );
   };
 
-  const { title, description, buttonText, imageUrl } =
+  const handleStartCourse = async (courseId: string) => {
+    try {
+      const sessionResponse = await fetch("/api/session", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const sessionData = await sessionResponse.json();
+
+      if (sessionData.loggedIn) {
+        router.push(`/course/${courseId}`);
+      } else {
+        setPendingCourse(courseId);
+        onOpen();
+      }
+    } catch (error) {
+      console.error("Error checking session or redirecting:", error);
+    }
+  };
+
+  const { title, description, buttonText, imageUrl, courseId } =
     featuredCourses[currentIndex];
 
   const variants = {
@@ -145,7 +184,11 @@ const FeaturedCourses = () => {
             <Text fontSize="lg" mb={4} textAlign="left">
               {description}
             </Text>
-            <Button colorScheme="teal" size="lg">
+            <Button
+              colorScheme="teal"
+              size="lg"
+              onClick={() => handleStartCourse(courseId)}
+            >
               {buttonText}
             </Button>
           </VStack>
@@ -164,6 +207,7 @@ const FeaturedCourses = () => {
           </Box>
         </Flex>
       </motion.div>
+
       <HStack
         spacing={2}
         justify="center"
@@ -188,6 +232,29 @@ const FeaturedCourses = () => {
           />
         ))}
       </HStack>
+      <AlertDialog
+        isOpen={isOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={onClose}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Login Required
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              You need to log in to your wallet to start this course.
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={onClose}>
+                Okay
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Box>
   );
 };

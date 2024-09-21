@@ -4,7 +4,7 @@ import { Course } from "@/app/models/Courses";
 
 const courses = [
   {
-    courseId: "aptos_101",
+    courseId: "course_1",
     title: "Aptos: Beginner's Guide to Blockchain",
     description: "An introduction to blockchain technology using Aptos.",
     tags: ["Aptos", "Blockchain", "Beginner"],
@@ -13,7 +13,7 @@ const courses = [
     rewards: 10,
   },
   {
-    courseId: "move_201",
+    courseId: "course_2",
     title: "MOVE: Aptos Programming Language Masterclass",
     description:
       "Learn how to write, deploy, and manage smart contracts using the MOVE language on Aptos.",
@@ -23,7 +23,7 @@ const courses = [
     rewards: 15,
   },
   {
-    courseId: "aptos_security",
+    courseId: "course_3",
     title: "Aptos: Security Best Practices",
     description:
       "Dive into best security practices for smart contract development on Aptos.",

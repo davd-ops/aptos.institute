@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/app/lib/mongodb";
 import { Challenge } from "@/app/models/Challenges";
 
-export async function GET(req: NextRequest, res: NextResponse) {
-  const { courseId } = await req.json();
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const courseId = searchParams.get("courseId");
 
   if (!courseId) {
     return NextResponse.json(
@@ -14,8 +15,8 @@ export async function GET(req: NextRequest, res: NextResponse) {
 
   try {
     await connectToDatabase();
-
     const challenges = await Challenge.find({ courseId });
+
     return NextResponse.json({ challenges }, { status: 200 });
   } catch (error) {
     console.error("Error fetching challenges:", error);
