@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
-import { connectToDatabase } from "@/next-app/lib/mongodb";
-import { User } from "@/next-app/models/User";
+import { connectToDatabase } from "@/app/lib/mongodb";
+import { User } from "@/app/models/User";
 import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET as string;

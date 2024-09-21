@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { Providers } from "@/next-app/providers";
-import { fonts } from "@/next-app/fonts";
+import { Providers } from "@/app/providers";
+import { fonts } from "@/app/fonts";
 import { Box } from "@chakra-ui/react";
 
 export const metadata: Metadata = {

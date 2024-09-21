@@ -1,7 +1,7 @@
 import { Box, Flex, Heading, Text, Button, HStack } from "@chakra-ui/react";
 import { useState } from "react";
-import Editor from "@/next-app/components/CodeEditor";
-import walletConnect from "@/next-app/hooks/walletConnect";
+import Editor from "@/app/components/CodeEditor";
+import walletConnect from "@/app/hooks/walletConnect";
 
 interface ChallengeProps {
   defaultCode: string;

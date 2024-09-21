@@ -2,7 +2,7 @@
 
 import { Box, Flex, Button, Text, Spacer, HStack } from "@chakra-ui/react";
 import { Link } from "@chakra-ui/next-js";
-import walletConnect from "@/next-app/hooks/walletConnect";
+import walletConnect from "@/app/hooks/walletConnect";
 
 export default function Navbar() {
   const { connectWallet, disconnectWallet, address, isLoggedIn } =

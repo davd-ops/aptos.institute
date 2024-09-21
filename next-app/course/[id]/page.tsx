@@ -2,9 +2,9 @@
 
 import { Flex, Spinner } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
-import Navbar from "@/next-app/components/Navbar";
-import Challenge from "@/next-app/components/Challenge";
-import walletConnect from "@/next-app/hooks/walletConnect";
+import Navbar from "@/app/components/Navbar";
+import Challenge from "@/app/components/Challenge";
+import walletConnect from "@/app/hooks/walletConnect";
 
 const challenges = [
   {
