@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
-import { connectToDatabase } from "@/app/lib/mongodb";
-import { Progress } from "@/app/models/Progress";
+import { connectToDatabase } from "@/next-app/lib/mongodb";
+import { Progress } from "@/next-app/models/Progress";
 
 export async function POST(req: NextRequest) {
   const { address, courseId, challengeId } = await req.json();

@@ -5,7 +5,7 @@ import { HexString } from "aptos";
 import {
   SignedMessageResponse,
   WalletConnectReturn,
-} from "@/app/types/walletConnect";
+} from "@/next-app/types/walletConnect";
 
 const walletConnect = (): WalletConnectReturn => {
   const [walletAvailable, setWalletAvailable] = useState<boolean>(false);

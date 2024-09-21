@@ -2,7 +2,7 @@
 
 import { CacheProvider } from "@chakra-ui/next-js";
 import { ChakraProvider } from "@chakra-ui/react";
-import theme from "@/app/theme/theme";
+import theme from "@/next-app/theme/theme";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Navbar from "@/app/components/Navbar";
+import Navbar from "@/next-app/components/Navbar";
 
 interface ProfileProps {
   address: string;
