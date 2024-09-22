@@ -15,15 +15,15 @@ export async function POST(req: NextRequest) {
 
     await connectToDatabase();
 
-    // const user = await User.findOneAndUpdate(
-    //   { address },
-    //   { $addToSet: { coursesCompleted: courseId } },
-    //   { new: true }
-    // );
+    const user = await User.findOneAndUpdate(
+      { address },
+      { $addToSet: { coursesCompleted: courseId } },
+      { new: true }
+    );
 
-    // if (!user) {
-    //   return NextResponse.json({ message: "User not found" }, { status: 404 });
-    // }
+    if (!user) {
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
+    }
 
     // TODO: Implement reward logic here
 

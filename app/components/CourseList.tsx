@@ -203,10 +203,13 @@ const CourseList = () => {
 
       <Flex direction="column" gap={8}>
         {filteredCourses.map((course) => {
-          const completedChallenges = userProgress[course.courseId]?.filter(
-            (progress: any) => progress.completed
-          ).length;
+          const completedChallenges =
+            userProgress[course.courseId]?.filter(
+              (progress: any) => progress.completed
+            ).length || 0;
+
           const totalChallenges = challengesCount[course.courseId] || 0;
+
           const progressPercentage =
             totalChallenges > 0
               ? (completedChallenges / totalChallenges) * 100
