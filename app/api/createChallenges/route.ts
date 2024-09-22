@@ -55,6 +55,32 @@ const challenges = [
     task: "Implement the create_account function",
     name: "Delete Account Challenge",
   },
+  {
+    courseId: "course_1",
+    challengeId: "challenge_3",
+    defaultCode: `module Aptos::EditAccount {
+        struct Account has copy, drop {
+            name: vector<u8>,
+            age: u64
+        }
+        public fun create_account(name: vector<u8>, age: u64): Account {
+            Account { } // Use the function parameters to initialize the struct
+        }
+    }`,
+    correctCode: `module Aptos::EditAccount {
+        struct Account has copy, drop {
+            name: vector<u8>,
+            age: u64
+        }
+        public fun create_account(name: vector<u8>, age: u64): Account {
+            Account { name, age } // Use the function parameters to initialize the struct
+        }
+    }`,
+    explanation:
+      "In this challenge, you need to implement the create_account function and initialize the struct with the correct parameters.",
+    task: "Implement the create_account function",
+    name: "Delete Account Challenge",
+  },
 ];
 
 export async function POST(req: NextRequest, res: NextResponse) {

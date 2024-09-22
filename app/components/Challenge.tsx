@@ -1,5 +1,19 @@
-import { Box, Flex, Heading, Text, Button, HStack } from "@chakra-ui/react";
-import { useState } from "react";
+import {
+  Box,
+  Flex,
+  Heading,
+  Text,
+  Button,
+  HStack,
+  AlertDialog,
+  AlertDialogOverlay,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogBody,
+  AlertDialogFooter,
+  useDisclosure,
+} from "@chakra-ui/react";
+import { useState, useEffect, useRef } from "react";
 import Editor from "@/app/components/CodeEditor";
 import walletConnect from "@/app/hooks/walletConnect";
 
@@ -16,6 +30,8 @@ interface ChallengeProps {
   challengeId: string;
   name: string;
   isReadOnly: boolean;
+  userProgress: { [key: string]: { completed: boolean } };
+  handleUpdateProgress: (challengeId: string, completed: boolean) => void;
 }
 
 const Challenge: React.FC<ChallengeProps> = ({
@@ -30,14 +46,29 @@ const Challenge: React.FC<ChallengeProps> = ({
   courseId,
   challengeId,
   name,
-  isReadOnly,
+  isReadOnly: initialReadOnly,
+  userProgress,
+  handleUpdateProgress,
 }) => {
+  const [isReadOnly, setIsReadOnly] = useState(initialReadOnly);
   const [showHintButton, setShowHintButton] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [userCode, setUserCode] = useState(defaultCode);
   const [validationMessage, setValidationMessage] = useState<string>("");
+  const [courseCompleted, setCourseCompleted] = useState(false);
+  const [rewardMessage, setRewardMessage] = useState("");
 
   const { address, isLoggedIn } = walletConnect();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+
+  const cancelRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    setUserCode(defaultCode);
+    setIsReadOnly(userProgress[challengeId]?.completed || initialReadOnly);
+    setValidationMessage("");
+    setShowHint(false);
+  }, [challengeId, defaultCode, userProgress, initialReadOnly]);
 
   const validateCode = async () => {
     if (isReadOnly) return;
@@ -56,6 +87,8 @@ const Challenge: React.FC<ChallengeProps> = ({
       setValidationMessage("Success! Your code is correct.");
       setShowHintButton(false);
       setShowHint(false);
+      setIsReadOnly(true);
+      onOpen();
 
       if (isLoggedIn && address) {
         await fetch("/api/submitChallenge", {
@@ -70,6 +103,10 @@ const Challenge: React.FC<ChallengeProps> = ({
             success: true,
           }),
         });
+
+        handleUpdateProgress(challengeId, true);
+
+        await checkCourseCompletion();
       }
     } else {
       setValidationMessage("The code is incorrect. Please try again.");
@@ -89,6 +126,53 @@ const Challenge: React.FC<ChallengeProps> = ({
           }),
         });
       }
+    }
+  };
+
+  const checkCourseCompletion = async () => {
+    try {
+      const response = await fetch(
+        `/api/getUserProgress?address=${address}&courseId=${courseId}`
+      );
+      const data = await response.json();
+
+      if (data.success) {
+        const completedChallengesCount = data.completedChallenges || 0;
+
+        if (completedChallengesCount === totalChallenges) {
+          await completeCourse();
+        }
+      }
+    } catch (error) {
+      console.error("Error checking course completion:", error);
+    }
+  };
+
+  const completeCourse = async () => {
+    try {
+      const response = await fetch("/api/completeCourse", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          address,
+          courseId,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setCourseCompleted(true);
+        setRewardMessage(
+          `Congratulations! You have completed the course "${data.courseName}". You have earned ${data.reward} tokens!`
+        );
+        onOpen();
+      } else {
+        console.error("Error completing course:", data.message);
+      }
+    } catch (error) {
+      console.error("Error completing course:", error);
     }
   };
 
@@ -120,17 +204,20 @@ const Challenge: React.FC<ChallengeProps> = ({
           borderBottom={{ base: "2px solid", md: "none" }}
           borderColor="gray.300"
           overflowY="auto"
+          color="white"
         >
-          <Heading as="h2" size="lg" mb={4}>
-            {task}
+          <Heading as="h2" size="lg" mb={4} color="white">
+            {name}
           </Heading>
           <Box>
-            <Text mb={4}>{explanation}</Text>
+            <Text mb={4} color="white">
+              {explanation}
+            </Text>
 
-            <Heading as="h3" size="md" mt={8} mb={4}>
+            <Heading as="h3" size="md" mt={8} mb={4} color="white">
               Your Task:
             </Heading>
-            <Text>{task}</Text>
+            <Text color="white">{task}</Text>
           </Box>
         </Box>
         <Box
@@ -139,14 +226,15 @@ const Challenge: React.FC<ChallengeProps> = ({
           display="flex"
           flexDirection="column"
           overflow="hidden"
+          color="white"
         >
-          <Text fontSize="lg" fontWeight="bold" mb={2}>
-            {name} - Module.move
+          <Text fontSize="lg" fontWeight="bold" mb={2} color="white">
+            Module.move
           </Text>
 
           <Box flex={1} overflow="hidden">
             <Editor
-              defaultCode={isReadOnly ? correctCode : defaultCode} 
+              defaultCode={isReadOnly ? correctCode : defaultCode}
               correctCode={correctCode}
               onChange={(value: string) => setUserCode(value || "")}
               isReadOnly={isReadOnly}
@@ -155,7 +243,7 @@ const Challenge: React.FC<ChallengeProps> = ({
 
           {showHint && (
             <>
-              <Text fontSize="lg" fontWeight="bold" mt={4} mb={2}>
+              <Text fontSize="lg" fontWeight="bold" mt={4} mb={2} color="white">
                 Hint.move
               </Text>
 
@@ -168,7 +256,9 @@ const Challenge: React.FC<ChallengeProps> = ({
           {validationMessage && (
             <Text
               mt={4}
-              color={validationMessage.includes("Success") ? "green" : "red"}
+              color={
+                validationMessage.includes("Success") ? "green.300" : "red.300"
+              }
             >
               {validationMessage}
             </Text>
@@ -177,7 +267,7 @@ const Challenge: React.FC<ChallengeProps> = ({
       </Flex>
 
       <Box
-        bg="gray.800"
+        bg="gray.900"
         color="white"
         p={4}
         borderTop="2px solid"
@@ -187,7 +277,7 @@ const Challenge: React.FC<ChallengeProps> = ({
         w="100%"
       >
         <Flex justifyContent="space-between" alignItems="center">
-          <Text>
+          <Text color="white">
             Challenge {currentChallenge} / {totalChallenges}
           </Text>
 
@@ -226,6 +316,43 @@ const Challenge: React.FC<ChallengeProps> = ({
           </HStack>
         </Flex>
       </Box>
+
+      <AlertDialog
+        isOpen={isOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={onClose}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              {courseCompleted ? "Course Completed!" : "Success!"}
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              {courseCompleted ? rewardMessage : "Your code is correct!"}
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={onClose}>
+                {courseCompleted ? "Close" : "Check Code"}
+              </Button>
+              {!courseCompleted && (
+                <Button
+                  colorScheme="teal"
+                  onClick={() => {
+                    onClose();
+                    setValidationMessage("");
+                    handleNext();
+                  }}
+                  ml={3}
+                >
+                  Next Challenge
+                </Button>
+              )}
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Flex>
   );
 };
