@@ -50,7 +50,7 @@ module aptos_institute::developer_cv {
 
     /// Initialize the module with a hardcoded public key and create fungible asset (FA)
     fun init_module(resource_signer: &signer) {
-        let signer_cap = resource_account::retrieve_resource_account_cap(resource_signer, @source_addr);
+        let signer_cap = resource_account::retrieve_resource_account_cap(resource_signer, @admin_addr);
 
         // Hardcoded public key - this will be updated later by calling `set_public_key`
         let pk_bytes = x"f66bf0ce5ceb582b93d6780820c2025b9967aedaa259bdbb9f3d0297eced0e18";
