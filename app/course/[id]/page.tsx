@@ -10,16 +10,18 @@ import { useParams } from "next/navigation";
 export default function ChallengePage() {
   const [challenges, setChallenges] = useState<any[]>([]);
   const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
-  const [userProgress, setUserProgress] = useState<{ [key: string]: { completed: boolean } }>({});
+  const [userProgress, setUserProgress] = useState<{
+    [key: string]: { completed: boolean };
+  }>({});
   const [loading, setLoading] = useState(true);
   const [progressLoaded, setProgressLoaded] = useState(false);
   const [courseCompleted, setCourseCompleted] = useState(false);
-  const [rewardMessage, setRewardMessage] = useState(""); 
+  const [rewardMessage, setRewardMessage] = useState("");
   const { address, isLoggedIn } = walletConnect();
   const { id: courseId } = useParams();
   const router = useRouter();
   const [courseRewards, setCourseRewards] = useState(0);
-  const [courseName, setCourseName] = useState(""); 
+  const [courseName, setCourseName] = useState("");
 
   useEffect(() => {
     const fetchChallengesAndProgress = async () => {
@@ -41,7 +43,9 @@ export default function ChallengePage() {
         if (progressData.success && progressData.progress) {
           const completedChallengesMap = progressData.progress.reduce(
             (acc: any, progressItem: any) => {
-              acc[progressItem.challengeId] = { completed: progressItem.completed };
+              acc[progressItem.challengeId] = {
+                completed: progressItem.completed,
+              };
               return acc;
             },
             {}
@@ -50,10 +54,13 @@ export default function ChallengePage() {
           setUserProgress(completedChallengesMap);
 
           const nextUncompletedIndex = challengeData.challenges.findIndex(
-            (challenge: any) => !completedChallengesMap[challenge.challengeId]?.completed
+            (challenge: any) =>
+              !completedChallengesMap[challenge.challengeId]?.completed
           );
 
-          setCurrentChallengeIndex(nextUncompletedIndex >= 0 ? nextUncompletedIndex : 0);
+          setCurrentChallengeIndex(
+            nextUncompletedIndex >= 0 ? nextUncompletedIndex : 0
+          );
         }
 
         setProgressLoaded(true);

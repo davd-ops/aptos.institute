@@ -31,6 +31,11 @@ export async function GET(req: NextRequest, res: NextResponse) {
       {
         address: user.address,
         userName: user.userName,
+        balance: user.balance,
+        coursesCompleted: user.coursesCompleted,
+        twitter: user.twitter,
+        github: user.github,
+        website: user.website,
       },
       { status: 200 }
     );
