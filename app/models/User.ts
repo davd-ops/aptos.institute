@@ -25,7 +25,7 @@ const userSchema = new Schema<IUser>({
   },
   coursesUnlocked: {
     type: [String],
-    default: ["course_1", "course_2"],
+    default: ["course_1"],
   },
   coursesCompleted: {
     type: [String],

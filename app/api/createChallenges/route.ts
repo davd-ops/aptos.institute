@@ -4,8 +4,8 @@ import { Challenge } from "@/app/models/Challenges";
 
 const challenges = [
   {
-    courseId: "course_1",
-    challengeId: "challenge_1",
+    courseId: "course_2",
+    challengeId: "challenge_1_2",
     defaultCode: `module Aptos::CreateAccount {
         struct Account has copy, drop {
             name: vector<u8>,
@@ -30,8 +30,8 @@ const challenges = [
     name: "Create Account Function",
   },
   {
-    courseId: "course_1",
-    challengeId: "challenge_2",
+    courseId: "course_2",
+    challengeId: "challenge_2_2",
     defaultCode: `module Aptos::DeleteAccount {
         struct Account has copy, drop {
             name: vector<u8>,
@@ -56,8 +56,8 @@ const challenges = [
     name: "Delete Account Challenge",
   },
   {
-    courseId: "course_1",
-    challengeId: "challenge_3",
+    courseId: "course_3",
+    challengeId: "challenge_1_3",
     defaultCode: `module Aptos::EditAccount {
         struct Account has copy, drop {
             name: vector<u8>,

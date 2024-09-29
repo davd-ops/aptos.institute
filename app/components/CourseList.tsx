@@ -1,5 +1,4 @@
 "use client";
-
 import {
   Box,
   Flex,
@@ -20,6 +19,7 @@ import {
   AlertDialogBody,
   AlertDialogFooter,
   useDisclosure,
+  useToast,
 } from "@chakra-ui/react";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -58,18 +58,19 @@ const CourseList = () => {
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [userProgress, setUserProgress] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState<boolean>(true);
-  const [pendingCourse, setPendingCourse] = useState<string | null>(null);
+  const [pendingCourse, setPendingCourse] = useState<Course | null>(null); // Store course details for pending unlock
   const { isLoggedIn, address, connectWallet, verificationStatus } =
     walletConnect();
   const router = useRouter();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const toast = useToast(); // For notifications
+  const [userBalance, setUserBalance] = useState(0); // Store user's token balance
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         setLoading(true);
-
         const response = await fetch("/api/fetchCourses");
         const data = await response.json();
         setCourses(data.courses);
@@ -84,7 +85,6 @@ const CourseList = () => {
               }
             );
             const challengeData = await response.json();
-
             setChallengesCount((prev) => ({
               ...prev,
               [course.courseId]: challengeData.challenges.length,
@@ -103,35 +103,27 @@ const CourseList = () => {
 
   useEffect(() => {
     if (isLoggedIn && address) {
-      const fetchUserProgress = async () => {
+      const fetchUserProgressAndBalance = async () => {
         try {
           const progressMap: Record<string, any> = {};
+          const userResponse = await fetch(`/api/profile`);
+          const userData = await userResponse.json();
 
-          await Promise.all(
-            courses.map(async (course) => {
-              const response = await fetch(
-                `/api/getUserProgress?address=${address}&courseId=${course.courseId}`
-              );
-              const data = await response.json();
-              if (data.success && data.progress.length > 0) {
-                progressMap[course.courseId] = data.progress;
-              }
-            })
-          );
+          if (userData) {
+            setUserBalance(userData.balance);
+            userData.coursesUnlocked.forEach((unlockedCourseId: string) => {
+              progressMap[unlockedCourseId] = { unlocked: true };
+            });
+          }
 
           setUserProgress(progressMap);
-
-          if (pendingCourse) {
-            router.push(`/course/${pendingCourse}`);
-            setPendingCourse(null);
-          }
         } catch (error) {
-          console.error("Error fetching user progress:", error);
+          console.error("Error fetching user progress or balance:", error);
         }
       };
-      fetchUserProgress();
+      fetchUserProgressAndBalance();
     }
-  }, [isLoggedIn, address, courses, pendingCourse]);
+  }, [isLoggedIn, address, courses]);
 
   const handleFilterClick = (filter: string) => {
     setActiveFilters((prevFilters) =>
@@ -147,28 +139,90 @@ const CourseList = () => {
       )
     : courses;
 
-  const handleStartCourse = async (courseId: string) => {
+  const handleStartCourse = async (course: Course) => {
     try {
       const sessionResponse = await fetch("/api/session", {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       });
 
       const sessionData = await sessionResponse.json();
 
-      if (sessionData.loggedIn) {
-        router.push(`/course/${courseId}`);
+      if (!sessionData.loggedIn) {
+        router.push("/login"); // Redirect to login if not logged in
+        return;
+      }
+
+      // Check if course is unlocked
+      if (userProgress[course.courseId]?.unlocked) {
+        router.push(`/course/${course.courseId}`); // Redirect if course is already unlocked
       } else {
-        setPendingCourse(courseId);
-        onOpen();
+        // Course not unlocked, show dialog to purchase
+        setPendingCourse(course);
+        onOpen(); // Open the purchase dialog
       }
     } catch (error) {
-      console.error(
-        "Error checking session, wallet connection, or message signing:",
-        error
-      );
+      console.error("Error checking session or starting course:", error);
+    }
+  };
+
+  const handleBuyCourse = async () => {
+    if (pendingCourse) {
+      if (userBalance >= pendingCourse.price) {
+        try {
+          const response = await fetch("/api/unlockCourse", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              courseId: pendingCourse.courseId,
+              price: pendingCourse.price,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            setUserBalance((prevBalance) => prevBalance - pendingCourse.price);
+            toast({
+              title: "Course Unlocked",
+              description: `You have successfully unlocked the course "${pendingCourse.title}".`,
+              status: "success",
+              duration: 3000,
+              isClosable: true,
+              position: "top-right",
+            });
+
+            // After successful unlock, proceed to course
+            onClose();
+            router.push(`/course/${pendingCourse.courseId}`); // Redirect after unlocking
+          } else {
+            throw new Error(data.message);
+          }
+        } catch (error) {
+          toast({
+            title: "Purchase Error",
+            description:
+              error instanceof Error
+                ? error.message
+                : "Failed to unlock the course.",
+            status: "error",
+            duration: 3000,
+            isClosable: true,
+            position: "top-right",
+          });
+        }
+      } else {
+        toast({
+          title: "Insufficient Balance",
+          description: "You don't have enough tokens to purchase this course.",
+          status: "warning",
+          duration: 3000,
+          isClosable: true,
+          position: "top-right",
+        });
+      }
     }
   };
 
@@ -203,13 +257,15 @@ const CourseList = () => {
 
       <Flex direction="column" gap={8}>
         {filteredCourses.map((course) => {
-          const completedChallenges =
-            userProgress[course.courseId]?.filter(
-              (progress: any) => progress.completed
-            ).length || 0;
+          const completedChallenges = Array.isArray(
+            userProgress[course.courseId]
+          )
+            ? userProgress[course.courseId].filter(
+                (progress: any) => progress.completed
+              ).length
+            : 0;
 
           const totalChallenges = challengesCount[course.courseId] || 0;
-
           const progressPercentage =
             totalChallenges > 0
               ? (completedChallenges / totalChallenges) * 100
@@ -236,7 +292,6 @@ const CourseList = () => {
                   {course.title}
                 </Heading>
                 <Text fontSize="md">{course.description}</Text>
-
                 <HStack wrap="wrap" spacing={4}>
                   {course.tags.map((tag) => (
                     <Text key={tag} fontSize="sm" color="gray.500">
@@ -244,7 +299,6 @@ const CourseList = () => {
                     </Text>
                   ))}
                 </HStack>
-
                 <Flex
                   direction={{ base: "column", md: "row" }}
                   align="start"
@@ -271,7 +325,6 @@ const CourseList = () => {
                       </Text>
                     </HStack>
                   </Tooltip>
-
                   <Tooltip
                     label="A reward for completing the course"
                     aria-label="Rewards Tooltip"
@@ -310,7 +363,6 @@ const CourseList = () => {
                     </Text>
                   </HStack>
                 </Flex>
-
                 {isLoggedIn && (
                   <Box w="100%">
                     <Progress
@@ -324,11 +376,10 @@ const CourseList = () => {
                     </Text>
                   </Box>
                 )}
-
                 <Button
                   colorScheme="teal"
                   size="md"
-                  onClick={() => handleStartCourse(course.courseId)}
+                  onClick={() => handleStartCourse(course)}
                 >
                   Start Now
                 </Button>
@@ -345,6 +396,8 @@ const CourseList = () => {
           );
         })}
       </Flex>
+
+      {/* AlertDialog for course purchase */}
       <AlertDialog
         isOpen={isOpen}
         leastDestructiveRef={cancelRef}
@@ -353,16 +406,30 @@ const CourseList = () => {
         <AlertDialogOverlay>
           <AlertDialogContent>
             <AlertDialogHeader fontSize="lg" fontWeight="bold">
-              Login Required
+              Purchase Course
             </AlertDialogHeader>
-
             <AlertDialogBody>
-              You need to log in to your wallet to start this course.
+              {pendingCourse && (
+                <>
+                  <Text>
+                    You need to unlock the course{" "}
+                    <strong>{pendingCourse.title}</strong> for{" "}
+                    <strong>{pendingCourse.price} Tokens</strong> before
+                    starting.
+                  </Text>
+                  <Text mt={2}>
+                    Your current balance is{" "}
+                    <strong>{userBalance} Tokens</strong>.
+                  </Text>
+                </>
+              )}
             </AlertDialogBody>
-
             <AlertDialogFooter>
               <Button ref={cancelRef} onClick={onClose}>
-                Okay
+                Cancel
+              </Button>
+              <Button colorScheme="teal" onClick={handleBuyCourse} ml={3}>
+                Buy
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>

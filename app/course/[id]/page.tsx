@@ -22,10 +22,21 @@ export default function ChallengePage() {
   const router = useRouter();
   const [courseRewards, setCourseRewards] = useState(0);
   const [courseName, setCourseName] = useState("");
+  const [courseUnlocked, setCourseUnlocked] = useState(false);
 
   useEffect(() => {
     const fetchChallengesAndProgress = async () => {
       try {
+        const profileResponse = await fetch(`/api/profile`);
+        const profileData = await profileResponse.json();
+
+        if (!profileData.coursesUnlocked.includes(courseId)) {
+          router.push("/courses");
+          return;
+        } else {
+          setCourseUnlocked(true);
+        }
+
         const [challengeResponse, progressResponse] = await Promise.all([
           fetch(`/api/fetchChallengesByCourse?courseId=${courseId}`),
           fetch(`/api/getUserProgress?address=${address}&courseId=${courseId}`),
@@ -143,22 +154,24 @@ export default function ChallengePage() {
   return (
     <Flex direction="column" h="100vh">
       <Navbar />
-      <Challenge
-        defaultCode={currentChallenge.defaultCode}
-        correctCode={currentChallenge.correctCode}
-        explanation={currentChallenge.explanation}
-        task={currentChallenge.task}
-        totalChallenges={challenges.length}
-        currentChallenge={currentChallengeIndex + 1}
-        handleNext={handleNextChallenge}
-        handlePrev={handlePreviousChallenge}
-        courseId={currentChallenge.courseId}
-        challengeId={currentChallenge.challengeId}
-        name={currentChallenge.name}
-        isReadOnly={!!userProgress[currentChallenge.challengeId]}
-        userProgress={userProgress}
-        handleUpdateProgress={handleUpdateProgress}
-      />
+      {courseUnlocked && (
+        <Challenge
+          defaultCode={currentChallenge.defaultCode}
+          correctCode={currentChallenge.correctCode}
+          explanation={currentChallenge.explanation}
+          task={currentChallenge.task}
+          totalChallenges={challenges.length}
+          currentChallenge={currentChallengeIndex + 1}
+          handleNext={handleNextChallenge}
+          handlePrev={handlePreviousChallenge}
+          courseId={currentChallenge.courseId}
+          challengeId={currentChallenge.challengeId}
+          name={currentChallenge.name}
+          isReadOnly={!!userProgress[currentChallenge.challengeId]}
+          userProgress={userProgress}
+          handleUpdateProgress={handleUpdateProgress}
+        />
+      )}
     </Flex>
   );
 }
