@@ -14,48 +14,76 @@ import {
   AlertDialogBody,
   AlertDialogFooter,
   useDisclosure,
+  useToast,
+  Spinner,
 } from "@chakra-ui/react";
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import walletConnect from "@/app/hooks/walletConnect";
 
-const featuredCourses = [
-  {
-    title: "Aptos: Introduction to Blockchain Development",
-    description:
-      "Learn the fundamentals of Aptos and its blockchain ecosystem.",
-    buttonText: "Start Now",
-    imageUrl: "/images/aptos.png",
-    courseId: "course_1",
-  },
-  {
-    title: "Move: Writing Secure Smart Contracts",
-    description:
-      "Master the Move programming language and write secure smart contracts.",
-    buttonText: "Start Now",
-    imageUrl: "/images/aptos.png",
-    courseId: "course_2",
-  },
-  {
-    title: "Aptos Advanced: Scalable Blockchain Solutions",
-    description:
-      "Dive deeper into Aptos' advanced features and scalability solutions.",
-    buttonText: "Start Now",
-    imageUrl: "/images/aptos.png",
-    courseId: "course_3",
-  },
-];
+interface Course {
+  _id: string;
+  courseId: string;
+  title: string;
+  description: string;
+  price: number;
+  imageUrl: string;
+}
 
 const FeaturedCourses = () => {
+  const [featuredCourses, setFeaturedCourses] = useState<Course[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isLoginDialogOpen,
+    onOpen: openLoginDialog,
+    onClose: closeLoginDialog,
+  } = useDisclosure();
+  const {
+    isOpen: isPurchaseDialogOpen,
+    onOpen: openPurchaseDialog,
+    onClose: closePurchaseDialog,
+  } = useDisclosure();
   const cancelRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
   const { isLoggedIn, connectWallet } = walletConnect();
-  const [pendingCourse, setPendingCourse] = useState<string | null>(null);
+  const [pendingCourse, setPendingCourse] = useState<Course | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [userProgress, setUserProgress] = useState<Record<string, any>>({});
+  const [userBalance, setUserBalance] = useState(0);
+  const toast = useToast();
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch("/api/fetchCourses");
+        const data = await response.json();
+        const topCourses = data.courses.slice(0, 3);
+        setFeaturedCourses(topCourses);
+
+        if (isLoggedIn) {
+          const profileResponse = await fetch("/api/profile");
+          const profileData = await profileResponse.json();
+
+          setUserBalance(profileData.balance);
+          const progressMap: Record<string, any> = {};
+          profileData.coursesUnlocked.forEach((unlockedCourseId: string) => {
+            progressMap[unlockedCourseId] = { unlocked: true };
+          });
+          setUserProgress(progressMap);
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching featured courses:", error);
+        setLoading(false);
+      }
+    };
+
+    fetchCourses();
+  }, [isLoggedIn]);
 
   const handleNext = () => {
     setDirection(1);
@@ -69,7 +97,7 @@ const FeaturedCourses = () => {
     );
   };
 
-  const handleStartCourse = async (courseId: string) => {
+  const handleStartCourse = async (course: Course) => {
     try {
       const sessionResponse = await fetch("/api/session", {
         method: "GET",
@@ -80,18 +108,91 @@ const FeaturedCourses = () => {
 
       const sessionData = await sessionResponse.json();
 
-      if (sessionData.loggedIn) {
-        router.push(`/course/${courseId}`);
+      if (!sessionData.loggedIn) {
+        setPendingCourse(course);
+        openLoginDialog(); 
+        return;
+      }
+
+      if (userProgress[course.courseId]?.unlocked) {
+        router.push(`/course/${course.courseId}`);
       } else {
-        setPendingCourse(courseId);
-        onOpen();
+        setPendingCourse(course);
+        openPurchaseDialog();
       }
     } catch (error) {
-      console.error("Error checking session or redirecting:", error);
+      console.error("Error checking session or starting course:", error);
     }
   };
 
-  const { title, description, buttonText, imageUrl, courseId } =
+  const handleBuyCourse = async () => {
+    if (pendingCourse) {
+      if (userBalance >= pendingCourse.price) {
+        try {
+          const response = await fetch("/api/unlockCourse", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              courseId: pendingCourse.courseId,
+              price: pendingCourse.price,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            setUserBalance((prevBalance) => prevBalance - pendingCourse.price);
+            toast({
+              title: "Course Unlocked",
+              description: `You have successfully unlocked the course "${pendingCourse.title}".`,
+              status: "success",
+              duration: 3000,
+              isClosable: true,
+              position: "top-right",
+            });
+
+            closePurchaseDialog();
+            router.push(`/course/${pendingCourse.courseId}`);
+          } else {
+            throw new Error(data.message);
+          }
+        } catch (error) {
+          toast({
+            title: "Purchase Error",
+            description:
+              error instanceof Error
+                ? error.message
+                : "Failed to unlock the course.",
+            status: "error",
+            duration: 3000,
+            isClosable: true,
+            position: "top-right",
+          });
+        }
+      } else {
+        toast({
+          title: "Insufficient Balance",
+          description: "You don't have enough tokens to purchase this course.",
+          status: "warning",
+          duration: 3000,
+          isClosable: true,
+          position: "top-right",
+        });
+      }
+    }
+  };
+
+  if (loading) {
+    return (
+      <Flex justify="center" align="center" h="100vh">
+        <Spinner size="xl" color="teal.500" />
+      </Flex>
+    );
+  }
+
+  const { title, description, imageUrl, courseId } =
     featuredCourses[currentIndex];
 
   const variants = {
@@ -187,9 +288,9 @@ const FeaturedCourses = () => {
             <Button
               colorScheme="teal"
               size="lg"
-              onClick={() => handleStartCourse(courseId)}
+              onClick={() => handleStartCourse(featuredCourses[currentIndex])}
             >
-              {buttonText}
+              Start Now
             </Button>
           </VStack>
 
@@ -232,10 +333,11 @@ const FeaturedCourses = () => {
           />
         ))}
       </HStack>
+
       <AlertDialog
-        isOpen={isOpen}
+        isOpen={isLoginDialogOpen}
         leastDestructiveRef={cancelRef}
-        onClose={onClose}
+        onClose={closeLoginDialog}
       >
         <AlertDialogOverlay>
           <AlertDialogContent>
@@ -248,8 +350,46 @@ const FeaturedCourses = () => {
             </AlertDialogBody>
 
             <AlertDialogFooter>
-              <Button ref={cancelRef} onClick={onClose}>
+              <Button ref={cancelRef} onClick={closeLoginDialog}>
                 Okay
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
+
+      <AlertDialog
+        isOpen={isPurchaseDialogOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={closePurchaseDialog}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Purchase Course
+            </AlertDialogHeader>
+            <AlertDialogBody>
+              {pendingCourse && (
+                <>
+                  <Text>
+                    You need to unlock the course{" "}
+                    <strong>{pendingCourse.title}</strong> for{" "}
+                    <strong>{pendingCourse.price} Tokens</strong> before
+                    starting.
+                  </Text>
+                  <Text mt={2}>
+                    Your current balance is{" "}
+                    <strong>{userBalance} Tokens</strong>.
+                  </Text>
+                </>
+              )}
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={closePurchaseDialog}>
+                Cancel
+              </Button>
+              <Button colorScheme="teal" onClick={handleBuyCourse} ml={3}>
+                Buy
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
