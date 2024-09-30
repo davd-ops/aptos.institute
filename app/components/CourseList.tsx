@@ -23,7 +23,7 @@ import {
 } from "@chakra-ui/react";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import walletConnect from "@/app/hooks/walletConnect";
+import { useWallet } from "@/app/context/WalletContext";
 
 interface Course {
   _id: string;
@@ -56,16 +56,27 @@ const CourseList = () => {
     Record<string, number>
   >({});
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
-  const [userProgress, setUserProgress] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState<boolean>(true);
-  const [pendingCourse, setPendingCourse] = useState<Course | null>(null); // Store course details for pending unlock
-  const { isLoggedIn, address, connectWallet, verificationStatus } =
-    walletConnect();
+  const [pendingCourse, setPendingCourse] = useState<Course | null>(null);
+
+  const {
+    isLoggedIn,
+    address,
+    connectWallet,
+    userBalance,
+    fetchUserProfile,
+    userProgress,
+  } = useWallet();
   const router = useRouter();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = useRef<HTMLButtonElement>(null);
-  const toast = useToast(); // For notifications
-  const [userBalance, setUserBalance] = useState(0); // Store user's token balance
+  const toast = useToast();
+
+  const {
+    isOpen: isLoginDialogOpen,
+    onOpen: openLoginDialog,
+    onClose: closeLoginDialog,
+  } = useDisclosure();
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -103,27 +114,9 @@ const CourseList = () => {
 
   useEffect(() => {
     if (isLoggedIn && address) {
-      const fetchUserProgressAndBalance = async () => {
-        try {
-          const progressMap: Record<string, any> = {};
-          const userResponse = await fetch(`/api/profile`);
-          const userData = await userResponse.json();
-
-          if (userData) {
-            setUserBalance(userData.balance);
-            userData.coursesUnlocked.forEach((unlockedCourseId: string) => {
-              progressMap[unlockedCourseId] = { unlocked: true };
-            });
-          }
-
-          setUserProgress(progressMap);
-        } catch (error) {
-          console.error("Error fetching user progress or balance:", error);
-        }
-      };
-      fetchUserProgressAndBalance();
+      fetchUserProfile();
     }
-  }, [isLoggedIn, address, courses]);
+  }, [isLoggedIn, address]);
 
   const handleFilterClick = (filter: string) => {
     setActiveFilters((prevFilters) =>
@@ -149,17 +142,16 @@ const CourseList = () => {
       const sessionData = await sessionResponse.json();
 
       if (!sessionData.loggedIn) {
-        router.push("/login"); // Redirect to login if not logged in
+        setPendingCourse(course);
+        openLoginDialog();
         return;
       }
 
-      // Check if course is unlocked
       if (userProgress[course.courseId]?.unlocked) {
-        router.push(`/course/${course.courseId}`); // Redirect if course is already unlocked
+        router.push(`/course/${course.courseId}`);
       } else {
-        // Course not unlocked, show dialog to purchase
         setPendingCourse(course);
-        onOpen(); // Open the purchase dialog
+        onOpen();
       }
     } catch (error) {
       console.error("Error checking session or starting course:", error);
@@ -184,7 +176,6 @@ const CourseList = () => {
           const data = await response.json();
 
           if (data.success) {
-            setUserBalance((prevBalance) => prevBalance - pendingCourse.price);
             toast({
               title: "Course Unlocked",
               description: `You have successfully unlocked the course "${pendingCourse.title}".`,
@@ -194,9 +185,8 @@ const CourseList = () => {
               position: "top-right",
             });
 
-            // After successful unlock, proceed to course
             onClose();
-            router.push(`/course/${pendingCourse.courseId}`); // Redirect after unlocking
+            router.push(`/course/${pendingCourse.courseId}`);
           } else {
             throw new Error(data.message);
           }
@@ -223,6 +213,21 @@ const CourseList = () => {
           position: "top-right",
         });
       }
+    }
+  };
+
+  const handleLogin = async () => {
+    try {
+      await connectWallet();
+      closeLoginDialog();
+      if (isLoggedIn && address) {
+        fetchUserProfile();
+        if (pendingCourse) {
+          handleStartCourse(pendingCourse);
+        }
+      }
+    } catch (error) {
+      console.error("Error during login:", error);
     }
   };
 
@@ -257,15 +262,10 @@ const CourseList = () => {
 
       <Flex direction="column" gap={8}>
         {filteredCourses.map((course) => {
-          const completedChallenges = Array.isArray(
-            userProgress[course.courseId]
-          )
-            ? userProgress[course.courseId].filter(
-                (progress: any) => progress.completed
-              ).length
-            : 0;
-
+          const completedChallenges =
+            userProgress[course.courseId]?.completedChallenges || 0;
           const totalChallenges = challengesCount[course.courseId] || 0;
+
           const progressPercentage =
             totalChallenges > 0
               ? (completedChallenges / totalChallenges) * 100
@@ -397,7 +397,6 @@ const CourseList = () => {
         })}
       </Flex>
 
-      {/* AlertDialog for course purchase */}
       <AlertDialog
         isOpen={isOpen}
         leastDestructiveRef={cancelRef}
@@ -430,6 +429,33 @@ const CourseList = () => {
               </Button>
               <Button colorScheme="teal" onClick={handleBuyCourse} ml={3}>
                 Buy
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
+
+      <AlertDialog
+        isOpen={isLoginDialogOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={closeLoginDialog}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Login Required
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              You need to log in to your wallet to start this course.
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={closeLoginDialog}>
+                Cancel
+              </Button>
+              <Button colorScheme="teal" onClick={handleLogin} ml={3}>
+                Login
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>

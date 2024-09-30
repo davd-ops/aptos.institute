@@ -21,7 +21,7 @@ import { useState, useEffect, useRef } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import walletConnect from "@/app/hooks/walletConnect";
+import { useWallet } from "@/app/context/WalletContext";
 
 interface Course {
   _id: string;
@@ -48,11 +48,18 @@ const FeaturedCourses = () => {
   } = useDisclosure();
   const cancelRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
-  const { isLoggedIn, connectWallet } = walletConnect();
+
+  const {
+    isLoggedIn,
+    connectWallet,
+    fetchUserProfile,
+    address,
+    userProgress,
+    userBalance,
+  } = useWallet();
+
   const [pendingCourse, setPendingCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userProgress, setUserProgress] = useState<Record<string, any>>({});
-  const [userBalance, setUserBalance] = useState(0);
   const toast = useToast();
 
   useEffect(() => {
@@ -63,18 +70,6 @@ const FeaturedCourses = () => {
         const data = await response.json();
         const topCourses = data.courses.slice(0, 3);
         setFeaturedCourses(topCourses);
-
-        if (isLoggedIn) {
-          const profileResponse = await fetch("/api/profile");
-          const profileData = await profileResponse.json();
-
-          setUserBalance(profileData.balance);
-          const progressMap: Record<string, any> = {};
-          profileData.coursesUnlocked.forEach((unlockedCourseId: string) => {
-            progressMap[unlockedCourseId] = { unlocked: true };
-          });
-          setUserProgress(progressMap);
-        }
         setLoading(false);
       } catch (error) {
         console.error("Error fetching featured courses:", error);
@@ -83,7 +78,7 @@ const FeaturedCourses = () => {
     };
 
     fetchCourses();
-  }, [isLoggedIn]);
+  }, []);
 
   const handleNext = () => {
     setDirection(1);
@@ -98,30 +93,17 @@ const FeaturedCourses = () => {
   };
 
   const handleStartCourse = async (course: Course) => {
-    try {
-      const sessionResponse = await fetch("/api/session", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+    if (!isLoggedIn) {
+      setPendingCourse(course);
+      openLoginDialog();
+      return;
+    }
 
-      const sessionData = await sessionResponse.json();
-
-      if (!sessionData.loggedIn) {
-        setPendingCourse(course);
-        openLoginDialog(); 
-        return;
-      }
-
-      if (userProgress[course.courseId]?.unlocked) {
-        router.push(`/course/${course.courseId}`);
-      } else {
-        setPendingCourse(course);
-        openPurchaseDialog();
-      }
-    } catch (error) {
-      console.error("Error checking session or starting course:", error);
+    if (userProgress[course.courseId]?.unlocked) {
+      router.push(`/course/${course.courseId}`);
+    } else {
+      setPendingCourse(course);
+      openPurchaseDialog();
     }
   };
 
@@ -143,7 +125,6 @@ const FeaturedCourses = () => {
           const data = await response.json();
 
           if (data.success) {
-            setUserBalance((prevBalance) => prevBalance - pendingCourse.price);
             toast({
               title: "Course Unlocked",
               description: `You have successfully unlocked the course "${pendingCourse.title}".`,
@@ -181,6 +162,21 @@ const FeaturedCourses = () => {
           position: "top-right",
         });
       }
+    }
+  };
+
+  const handleLogin = async () => {
+    try {
+      await connectWallet();
+      closeLoginDialog();
+      if (isLoggedIn && address) {
+        fetchUserProfile();
+        if (pendingCourse) {
+          handleStartCourse(pendingCourse);
+        }
+      }
+    } catch (error) {
+      console.error("Error during login:", error);
     }
   };
 
@@ -351,7 +347,10 @@ const FeaturedCourses = () => {
 
             <AlertDialogFooter>
               <Button ref={cancelRef} onClick={closeLoginDialog}>
-                Okay
+                Cancel
+              </Button>
+              <Button colorScheme="teal" onClick={handleLogin} ml={3}>
+                Login
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>

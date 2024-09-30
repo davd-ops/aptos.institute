@@ -33,6 +33,26 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [userBalance, setUserBalance] = useState(0);
   const [userProgress, setUserProgress] = useState<Record<string, any>>({});
 
+  const fetchUserProgressForCourse = async (courseId: string) => {
+    try {
+      const response = await fetch(
+        `/api/getUserProgress?address=${address}&courseId=${courseId}`
+      );
+      const data = await response.json();
+      if (data.success) {
+        return {
+          completedChallenges: data.completedChallenges,
+          progress: data.progress,
+        };
+      } else {
+        return { completedChallenges: 0, progress: [] };
+      }
+    } catch (error) {
+      console.error("Error fetching user progress for course:", error);
+      return { completedChallenges: 0, progress: [] };
+    }
+  };
+
   const fetchUserProfile = async () => {
     try {
       const progressMap: Record<string, any> = {};
@@ -41,13 +61,21 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
       if (userData) {
         setUserBalance(userData.balance);
-        userData.coursesUnlocked.forEach((unlockedCourseId: string) => {
-          progressMap[unlockedCourseId] = { unlocked: true };
-        });
+
+        for (const unlockedCourseId of userData.coursesUnlocked) {
+          const courseProgress = await fetchUserProgressForCourse(
+            unlockedCourseId
+          );
+          progressMap[unlockedCourseId] = {
+            unlocked: true,
+            completedChallenges: courseProgress.completedChallenges,
+            progress: courseProgress.progress,
+          };
+        }
         setUserProgress(progressMap);
       }
     } catch (error) {
-      console.error("Error fetching user progress or balance:", error);
+      console.error("Error fetching user profile:", error);
     }
   };
 

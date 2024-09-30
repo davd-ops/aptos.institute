@@ -1,12 +1,14 @@
 "use client";
-
 import { Box, Flex, Button, Text, Spacer, HStack } from "@chakra-ui/react";
 import { Link } from "@chakra-ui/next-js";
-import walletConnect from "@/app/hooks/walletConnect";
+import { useWallet } from "@/app/context/WalletContext";
 
 export default function Navbar() {
-  const { connectWallet, disconnectWallet, address, isLoggedIn } =
-    walletConnect();
+  const { connectWallet, disconnectWallet, address, isLoggedIn } = useWallet();
+
+  const handleLogin = async () => {
+    await connectWallet();
+  };
 
   return (
     <Box bg="gray.900" px={4} boxShadow="sm" color="white">
@@ -43,7 +45,7 @@ export default function Navbar() {
               </Button>
             </>
           ) : (
-            <Button colorScheme="teal" onClick={connectWallet}>
+            <Button colorScheme="teal" onClick={handleLogin}>
               Connect Wallet
             </Button>
           )}
