@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/app/lib/mongodb";
 import { User } from "@/app/models/User";
+import { Course } from "@/app/models/Courses";
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,9 +16,22 @@ export async function POST(req: NextRequest) {
 
     await connectToDatabase();
 
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return NextResponse.json(
+        { message: "Course not found" },
+        { status: 404 }
+      );
+    }
+
+    const { title: courseName, rewards: reward } = course;
+
     const user = await User.findOneAndUpdate(
       { address },
-      { $addToSet: { coursesCompleted: courseId } },
+      {
+        $addToSet: { coursesCompleted: courseId },
+        $inc: { balance: reward },
+      },
       { new: true }
     );
 
@@ -25,14 +39,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
 
-    // TODO: Implement reward logic here
-
     return NextResponse.json(
       {
         success: true,
-        reward: 10,
-        courseName: "Aptos Course 1",
-        message: "Course completed and reward issued",
+        reward,
+        courseName,
+        newBalance: user.balance,
+        message: `Course '${courseName}' completed and reward of ${reward} tokens issued`,
       },
       { status: 200 }
     );
