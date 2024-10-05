@@ -7,13 +7,17 @@ const walletConnector = () => {
     connectWallet,
     disconnectWallet,
     address,
-    signedMessage,
     verificationStatus,
     isLoggedIn,
   } = walletConnect();
 
   return (
-    <Box minH="100vh" display="flex" alignItems="center" justifyContent="center">
+    <Box
+      minH="100vh"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+    >
       <VStack spacing={5}>
         {walletAvailable ? (
           <>
@@ -47,6 +51,5 @@ const walletConnector = () => {
     </Box>
   );
 };
-
 
 export default walletConnector;

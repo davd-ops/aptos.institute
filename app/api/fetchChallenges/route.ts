@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/app/lib/mongodb";
 import { Challenge } from "@/app/models/Challenges";
 
-export async function GET(req: NextRequest, res: NextResponse) {
+export async function GET() {
   try {
     await connectToDatabase();
 

@@ -1,6 +1,10 @@
 import { NextResponse, NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
 
+interface DecodedToken extends jwt.JwtPayload {
+  address: string;
+}
+
 const JWT_SECRET = process.env.JWT_SECRET as string;
 
 export async function GET(req: NextRequest) {
@@ -14,10 +18,10 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET) as DecodedToken;
 
     return NextResponse.json(
-      { valid: true, address: (decoded as any).address },
+      { valid: true, address: decoded.address },
       { status: 200 }
     );
   } catch (error) {

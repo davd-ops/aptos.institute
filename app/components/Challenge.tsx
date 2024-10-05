@@ -15,7 +15,7 @@ import {
 } from "@chakra-ui/react";
 import { useState, useEffect, useRef } from "react";
 import Editor from "@/app/components/CodeEditor";
-import walletConnect from "@/app/hooks/walletConnect";
+import useWalletConnect from "@/app/hooks/walletConnect";
 
 interface ChallengeProps {
   defaultCode: string;
@@ -58,7 +58,7 @@ const Challenge: React.FC<ChallengeProps> = ({
   const [courseCompleted, setCourseCompleted] = useState(false);
   const [rewardMessage, setRewardMessage] = useState("");
 
-  const { address, isLoggedIn } = walletConnect();
+  const { address, isLoggedIn } = useWalletConnect();
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const cancelRef = useRef<HTMLButtonElement>(null);

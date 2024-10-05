@@ -4,25 +4,56 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/app/components/Navbar";
 import Challenge from "@/app/components/Challenge";
-import walletConnect from "@/app/hooks/walletConnect";
+import useWalletConnect from "@/app/hooks/walletConnect";
 import { useParams } from "next/navigation";
 
+interface Challenge {
+  challengeId: string;
+  courseId: string;
+  name: string;
+  task: string;
+  defaultCode: string;
+  correctCode: string;
+  explanation: string;
+}
+
+interface ProgressItem {
+  challengeId: string;
+  completed: boolean;
+}
+
 export default function ChallengePage() {
-  const [challenges, setChallenges] = useState<any[]>([]);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
-  const [userProgress, setUserProgress] = useState<{
-    [key: string]: { completed: boolean };
-  }>({});
+  const [userProgress, setUserProgress] = useState<
+    Record<string, { completed: boolean }>
+  >({});
   const [loading, setLoading] = useState(true);
   const [progressLoaded, setProgressLoaded] = useState(false);
   const [courseCompleted, setCourseCompleted] = useState(false);
-  const [rewardMessage, setRewardMessage] = useState("");
-  const { address, isLoggedIn } = walletConnect();
+  const { address, isLoggedIn } = useWalletConnect();
   const { id: courseId } = useParams();
   const router = useRouter();
-  const [courseRewards, setCourseRewards] = useState(0);
-  const [courseName, setCourseName] = useState("");
   const [courseUnlocked, setCourseUnlocked] = useState(false);
+
+  const completeCourse = async () => {
+    try {
+      const response = await fetch("/api/completeCourse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address, courseId }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setCourseCompleted(true);
+      } else {
+        console.error("Error completing course:", data.message);
+      }
+    } catch (error) {
+      console.error("Error completing course:", error);
+    }
+  };
 
   useEffect(() => {
     const fetchChallengesAndProgress = async () => {
@@ -47,13 +78,14 @@ export default function ChallengePage() {
 
         if (challengeData.challenges) {
           setChallenges(challengeData.challenges);
-          setCourseRewards(challengeData.rewards);
-          setCourseName(challengeData.title);
         }
 
         if (progressData.success && progressData.progress) {
           const completedChallengesMap = progressData.progress.reduce(
-            (acc: any, progressItem: any) => {
+            (
+              acc: Record<string, { completed: boolean }>,
+              progressItem: ProgressItem
+            ) => {
               acc[progressItem.challengeId] = {
                 completed: progressItem.completed,
               };
@@ -65,7 +97,7 @@ export default function ChallengePage() {
           setUserProgress(completedChallengesMap);
 
           const nextUncompletedIndex = challengeData.challenges.findIndex(
-            (challenge: any) =>
+            (challenge: Challenge) =>
               !completedChallengesMap[challenge.challengeId]?.completed
           );
 
@@ -86,7 +118,7 @@ export default function ChallengePage() {
     if (isLoggedIn && address && courseId) {
       fetchChallengesAndProgress();
     }
-  }, [address, isLoggedIn, courseId, router]);
+  }, [address, isLoggedIn, courseId, router, completeCourse]);
 
   useEffect(() => {
     if (progressLoaded && challenges.length > 0) {
@@ -98,29 +130,13 @@ export default function ChallengePage() {
         completeCourse();
       }
     }
-  }, [progressLoaded, challenges, userProgress, courseCompleted]);
-
-  const completeCourse = async () => {
-    try {
-      const response = await fetch("/api/completeCourse", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address, courseId }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setCourseCompleted(true);
-        setRewardMessage(
-          `Congratulations! You have completed the course "${courseName}". You have earned ${courseRewards} tokens!`
-        );
-      } else {
-        console.error("Error completing course:", data.message);
-      }
-    } catch (error) {
-      console.error("Error completing course:", error);
-    }
-  };
+  }, [
+    progressLoaded,
+    challenges,
+    userProgress,
+    courseCompleted,
+    completeCourse,
+  ]);
 
   const handleNextChallenge = () => {
     if (currentChallengeIndex < challenges.length - 1) {

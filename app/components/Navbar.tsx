@@ -4,7 +4,7 @@ import { Link } from "@chakra-ui/next-js";
 import { useWallet } from "@/app/context/WalletContext";
 
 export default function Navbar() {
-  const { connectWallet, disconnectWallet, address, isLoggedIn } = useWallet();
+  const { connectWallet, disconnectWallet, isLoggedIn } = useWallet();
 
   const handleLogin = async () => {
     await connectWallet();

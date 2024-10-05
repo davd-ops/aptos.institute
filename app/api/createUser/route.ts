@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   try {
     await connectToDatabase();
 
-    let existingUser = await User.findOne({ address });
+    const existingUser = await User.findOne({ address });
 
     if (existingUser) {
       return NextResponse.json(

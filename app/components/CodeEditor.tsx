@@ -30,14 +30,14 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     });
   };
 
-  const handleEditorDidMount: OnMount = (editor, monaco) => {
-    monacoRef.current = editor; 
+  const handleEditorDidMount: OnMount = (editor) => {
+    monacoRef.current = editor;
   };
 
   return (
     <Editor
       height="300px"
-      defaultLanguage="typescript" 
+      defaultLanguage="typescript"
       theme="vs-dark"
       beforeMount={handleEditorWillMount}
       onMount={handleEditorDidMount}

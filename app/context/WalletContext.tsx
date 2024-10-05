@@ -5,13 +5,22 @@ import {
   useEffect,
   ReactNode,
 } from "react";
-import walletConnect from "@/app/hooks/walletConnect";
+import useWalletConnect from "@/app/hooks/walletConnect";
+
+interface CourseProgress {
+  unlocked: boolean;
+  completedChallenges: number;
+  progress: Array<{
+    challengeId: string;
+    completed: boolean;
+  }>;
+}
 
 interface WalletContextProps {
   address: string | null;
   isLoggedIn: boolean;
   userBalance: number;
-  userProgress: Record<string, any>;
+  userProgress: Record<string, CourseProgress>;
   fetchUserProfile: () => Promise<void>;
   connectWallet: () => Promise<void>;
   disconnectWallet: () => Promise<void>;
@@ -29,11 +38,15 @@ export const useWallet = (): WalletContextProps => {
 
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const { connectWallet, disconnectWallet, address, isLoggedIn } =
-    walletConnect();
+    useWalletConnect();
   const [userBalance, setUserBalance] = useState(0);
-  const [userProgress, setUserProgress] = useState<Record<string, any>>({});
+  const [userProgress, setUserProgress] = useState<
+    Record<string, CourseProgress>
+  >({});
 
-  const fetchUserProgressForCourse = async (courseId: string) => {
+  const fetchUserProgressForCourse = async (
+    courseId: string
+  ): Promise<CourseProgress> => {
     try {
       const response = await fetch(
         `/api/getUserProgress?address=${address}&courseId=${courseId}`
@@ -41,21 +54,22 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       const data = await response.json();
       if (data.success) {
         return {
+          unlocked: true,
           completedChallenges: data.completedChallenges,
           progress: data.progress,
         };
       } else {
-        return { completedChallenges: 0, progress: [] };
+        return { unlocked: false, completedChallenges: 0, progress: [] };
       }
     } catch (error) {
       console.error("Error fetching user progress for course:", error);
-      return { completedChallenges: 0, progress: [] };
+      return { unlocked: false, completedChallenges: 0, progress: [] };
     }
   };
 
   const fetchUserProfile = async () => {
     try {
-      const progressMap: Record<string, any> = {};
+      const progressMap: Record<string, CourseProgress> = {};
       const userResponse = await fetch(`/api/profile`);
       const userData = await userResponse.json();
 
@@ -66,11 +80,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
           const courseProgress = await fetchUserProgressForCourse(
             unlockedCourseId
           );
-          progressMap[unlockedCourseId] = {
-            unlocked: true,
-            completedChallenges: courseProgress.completedChallenges,
-            progress: courseProgress.progress,
-          };
+          progressMap[unlockedCourseId] = courseProgress;
         }
         setUserProgress(progressMap);
       }
@@ -83,7 +93,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     if (isLoggedIn && address) {
       fetchUserProfile();
     }
-  }, [isLoggedIn, address]);
+  }, [isLoggedIn, address, fetchUserProfile]);
 
   return (
     <WalletContext.Provider

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/app/lib/mongodb";
 import { Challenge } from "@/app/models/Challenges";
 
@@ -83,7 +83,7 @@ const challenges = [
   },
 ];
 
-export async function POST(req: NextRequest, res: NextResponse) {
+export async function POST() {
   try {
     await connectToDatabase();
 

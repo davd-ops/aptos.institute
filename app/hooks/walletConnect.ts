@@ -7,7 +7,7 @@ import {
   WalletConnectReturn,
 } from "@/app/types/walletConnect";
 
-const walletConnect = (): WalletConnectReturn => {
+const useWalletConnect = (): WalletConnectReturn => {
   const [walletAvailable, setWalletAvailable] = useState<boolean>(false);
   const [address, setAddress] = useState<string | null>(null);
   const [signedMessage, setSignedMessage] =
@@ -52,11 +52,10 @@ const walletConnect = (): WalletConnectReturn => {
       const response = await window.aptos.connect();
       setAddress(response.address);
       await fetchNonce();
-      } catch (error) {
+    } catch (error) {
       console.error("Error connecting to Petra Wallet:", error);
     }
   };
-  
 
   const fetchNonce = async (): Promise<void> => {
     try {
@@ -178,12 +177,11 @@ const walletConnect = (): WalletConnectReturn => {
     }
   };
 
-
   useEffect(() => {
     if (address && nonce && !signedMessage) {
       signMessage();
     }
-  }, [address, nonce]);
+  }, [address, nonce, signedMessage, signMessage]);
 
   return {
     walletAvailable,
@@ -196,4 +194,4 @@ const walletConnect = (): WalletConnectReturn => {
   };
 };
 
-export default walletConnect;
+export default useWalletConnect;
