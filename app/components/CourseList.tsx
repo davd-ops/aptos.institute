@@ -116,7 +116,7 @@ const CourseList = () => {
     if (isLoggedIn && address) {
       fetchUserProfile();
     }
-  }, [isLoggedIn, address, fetchUserProfile]);
+  }, [isLoggedIn, address]);
 
   const handleFilterClick = (filter: string) => {
     setActiveFilters((prevFilters) =>

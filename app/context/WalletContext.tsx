@@ -93,7 +93,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     if (isLoggedIn && address) {
       fetchUserProfile();
     }
-  }, [isLoggedIn, address, fetchUserProfile]);
+  }, [isLoggedIn, address]);
 
   return (
     <WalletContext.Provider
