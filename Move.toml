@@ -2,10 +2,15 @@
     name = "aptos_institute"
     version = "0.1.0"
 
-    [dependencies]
-    AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", rev = "mainnet", subdir = "aptos-move/framework/aptos-framework" }
-    AptosToken = { git = "https://github.com/aptos-labs/aptos-core.git", rev = "mainnet", subdir = "aptos-move/framework/aptos-token" }
+    [dependencies.AptosFramework]
+    git = "https://github.com/aptos-labs/aptos-core.git"
+    rev = "mainnet"
+    subdir = "aptos-move/framework/aptos-framework"
+
+    [dependencies.AptosTokenObjects]
+    git = 'https://github.com/aptos-labs/aptos-core.git'
+    rev = 'mainnet'
+    subdir = 'aptos-move/framework/aptos-token-objects'
 
     [addresses]
-    admin_addr = "0xa3f48786a76ae4ff20906ab4c71147c70f741329ba417cbc9583b7ef5cf452d5"
-    aptos_institute="0xa3f48786a76ae4ff20906ab4c71147c70f741329ba417cbc9583b7ef5cf452d5"
+    AptosInstitute="0xa3f48786a76ae4ff20906ab4c71147c70f741329ba417cbc9583b7ef5cf452d5"
