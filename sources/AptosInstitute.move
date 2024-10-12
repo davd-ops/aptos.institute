@@ -23,6 +23,11 @@ module AptosInstitute::developer_resume {
     /// The resume collection URI
     const COLLECTION_URI: vector<u8> = b"https://developer-resume-uri.com";
 
+    /// Developer ranks based on completed courses
+    const RANK_BEGINNER: vector<u8> = b"Beginner";
+    const RANK_INTERMEDIATE: vector<u8> = b"Intermediate";
+    const RANK_EXPERT: vector<u8> = b"Expert";
+
     #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
     /// The developer resume token
     struct DeveloperResumeToken has key {
@@ -34,6 +39,14 @@ module AptosInstitute::developer_resume {
         property_mutator_ref: property_map::MutatorRef,
         /// The base URI of the token
         base_uri: String,
+    }
+
+    #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
+    /// The developer's progress across courses and challenges
+    struct DeveloperProgress has key {
+        total_points: u64,
+        completed_courses: vector<u64>,  // Stores course completion as course IDs
+        course_scores: vector<u64>,      // Stores numerical scores per course
     }
 
     /// Initializes the module, creating the developer resume collection.
@@ -54,6 +67,63 @@ module AptosInstitute::developer_resume {
             option::none(),
             uri,
         );
+    }
+
+    /// Mints a developer resume token without initial course data and transfers it to the soul_bound_to address.
+    public entry fun mint_resume(
+        creator: &signer,
+        description: String,
+        name: String,
+        base_uri: String,
+        soul_bound_to: address,
+    ) {
+        let collection = string::utf8(COLLECTION_NAME);
+        let uri = base_uri;
+        string::append(&mut uri, string::utf8(RANK_BEGINNER));
+        let constructor_ref = token::create_named_token(
+            creator,
+            collection,
+            description,
+            name,
+            option::none(),
+            uri,
+        );
+
+        let object_signer = object::generate_signer(&constructor_ref);
+        let transfer_ref = object::generate_transfer_ref(&constructor_ref);
+        let mutator_ref = token::generate_mutator_ref(&constructor_ref);
+        let burn_ref = token::generate_burn_ref(&constructor_ref);
+        let property_mutator_ref = property_map::generate_mutator_ref(&constructor_ref);
+
+        let linear_transfer_ref = object::generate_linear_transfer_ref(&transfer_ref);
+        object::transfer_with_ref(linear_transfer_ref, soul_bound_to);
+        object::disable_ungated_transfer(&transfer_ref);
+
+        move_to(&object_signer, DeveloperProgress { total_points: 0, completed_courses: vector::empty(), course_scores: vector::empty() });
+
+        let properties = property_map::prepare_input(vector[], vector[], vector[]);
+        property_map::init(&constructor_ref, properties);
+        property_map::add_typed(&property_mutator_ref, string::utf8(b"Rank"), string::utf8(RANK_BEGINNER));
+
+        let resume_token = DeveloperResumeToken {
+            mutator_ref,
+            burn_ref,
+            property_mutator_ref,
+            base_uri,
+        };
+        move_to(&object_signer, resume_token);
+    }
+
+    /// Burns a developer resume token
+    public entry fun burn_resume(creator: &signer, token: Object<DeveloperResumeToken>) acquires DeveloperResumeToken, DeveloperProgress {
+        authorize_creator(creator, &token);
+        let resume_token = move_from<DeveloperResumeToken>(object::object_address(&token));
+        let DeveloperResumeToken { mutator_ref: _, burn_ref, property_mutator_ref, base_uri: _ } = resume_token;
+
+        let DeveloperProgress { total_points: _, completed_courses: _, course_scores: _ } = move_from<DeveloperProgress>(object::object_address(&token));
+
+        property_map::burn(property_mutator_ref);
+        token::burn(burn_ref);
     }
 
     inline fun authorize_creator<T: key>(creator: &signer, token: &Object<T>) {
