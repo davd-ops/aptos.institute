@@ -49,6 +49,14 @@ module AptosInstitute::developer_resume {
         course_scores: vector<u64>,      // Stores numerical scores per course
     }
 
+    #[event]
+    /// The developer progress update event
+    struct ProgressUpdate has drop, store {
+        token: Object<DeveloperResumeToken>,
+        course_id: u64,
+        score_u64: u64,
+    }
+
     /// Initializes the module, creating the developer resume collection.
     fun init_module(sender: &signer) {
         create_resume_collection(sender);
@@ -124,6 +132,107 @@ module AptosInstitute::developer_resume {
 
         property_map::burn(property_mutator_ref);
         token::burn(burn_ref);
+    }
+
+        /// Function to sum the elements of a vector<u64>
+    fun sum_vector(scores: &vector<u64>): u64 {
+        let total: u64 = 0;
+        let length = vector::length(scores);
+        let i: u64 = 0;
+
+        while (i < length) {
+            let score = *vector::borrow(scores, i);
+            total = total + score;
+            i = i + 1;
+        };
+        total
+    }
+
+    /// Updates the developer resume rank based on the number of completed courses
+    fun update_resume_rank(
+        token: Object<DeveloperResumeToken>,
+        completed_courses: u64
+    ) acquires DeveloperResumeToken {
+        let new_rank = if (completed_courses < 3) {
+            RANK_BEGINNER
+        } else if (completed_courses < 5) {
+            RANK_INTERMEDIATE
+        } else {
+            RANK_EXPERT
+        };
+
+        let token_address = object::object_address(&token);
+        let resume_token = borrow_global<DeveloperResumeToken>(token_address);
+        let property_mutator_ref = &resume_token.property_mutator_ref;
+
+        property_map::update_typed(property_mutator_ref, &string::utf8(b"Rank"), string::utf8(new_rank));
+        
+        let uri = resume_token.base_uri;
+        string::append(&mut uri, string::utf8(new_rank));
+        token::set_uri(&resume_token.mutator_ref, uri);
+    }
+
+    public entry fun update_resume_progress(
+        creator: &signer,
+        token: Object<DeveloperResumeToken>,
+        course_name: String,
+        challenges: String,
+        course_id: String,
+        course_id_u64: u64,
+        score: String,
+        score_u64: u64,
+        attempts: String,
+        hints: String
+    ) acquires DeveloperProgress, DeveloperResumeToken {
+        authorize_creator(creator, &token);
+
+        let token_address = object::object_address(&token);
+        let progress = borrow_global_mut<DeveloperProgress>(token_address);
+
+        // Check if the course is already completed
+        let (found, index) = vector::index_of(&progress.completed_courses, &course_id_u64);
+        if (!found) {
+            vector::push_back(&mut progress.completed_courses, course_id_u64);
+            vector::push_back(&mut progress.course_scores, score_u64);
+        } else {
+            // If already completed, update the u64 score
+            *vector::borrow_mut(&mut progress.course_scores, index) = score_u64;
+        };
+
+        // Recalculate total points by summing the course scores
+        let total_score = sum_vector(&progress.course_scores);
+        progress.total_points = total_score;
+
+        // Emit event for progress update
+        event::emit(ProgressUpdate {
+            token,
+            course_id: course_id_u64,
+            score_u64,
+        });
+
+        // Perform rank update before we borrow the token mutably for property update
+        update_resume_rank(token, vector::length(&progress.completed_courses));
+
+        // Now proceed to update the token properties with course details, attempts, and hints
+        let course_property_name = string::utf8(b"CourseID_");
+        string::append(&mut course_property_name, course_id);
+        let course_property_value = string::utf8(b"Course: ");
+        string::append(&mut course_property_value, course_name);
+        string::append(&mut course_property_value, string::utf8(b", Challenges: "));
+        string::append(&mut course_property_value, challenges);
+        string::append(&mut course_property_value, string::utf8(b", Score: "));
+        string::append(&mut course_property_value, score);
+        string::append(&mut course_property_value, string::utf8(b", Attempts: "));
+        string::append(&mut course_property_value, attempts);
+        string::append(&mut course_property_value, string::utf8(b", Hints: "));
+        string::append(&mut course_property_value, hints);
+
+        // Borrow token mutably for property mutation
+        let resume_token = borrow_global_mut<DeveloperResumeToken>(token_address);
+        let property_mutator_ref = &resume_token.property_mutator_ref;
+
+        // Add or update the property directly
+        property_map::add_typed(property_mutator_ref, course_property_name, course_property_value);
     }
 
     inline fun authorize_creator<T: key>(creator: &signer, token: &Object<T>) {
