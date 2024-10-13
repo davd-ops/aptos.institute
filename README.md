@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Aptos Institute
 
-## Getting Started
+Helping developers learn Aptos! Made with ❤️ for Aptos Code Collision Hackaton in 2024.
 
-First, run the development server:
+## Problems solved
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+##### For developers
+* Friction of learning without enough of underlying materials
+* High barrier of entry because of confusing jargon
+* No clear path in where to start and how to continue
+* Hands-on gamified approach instead of endless theory
+* Clear onchain resume as demonstration of skills
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+##### For ecosystem
+* Influx of quality developers
+* Ease of hiring process based on Developer's onchain resume
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Core features
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+* Interactive in-browser coding courses with no dependencies
+* Token based rewards based on course score
+* Burning tokens to unlock more courses
+* Soulbound NFT with dynamic metadata updated as user is progressing through courses
+* Currently Live courses
+    * Aptos Beginner Class
+    * Move Master Class
+    * Security Best Practises
 
-## Learn More
+## Overview
 
-To learn more about Next.js, take a look at the following resources:
+Gamified approch to learning in general unlocks huge improvements to student's desire to learn. Rather than dropping someone into a huge pool of resources and letting them drown in them, we can redefine the landscape and present only resources relevant to their next assignement. Rather then forcing them to come up with topics they want to learn about, we present them with options relevant to their progress path.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+With each completed course, user gets score and tokens, based on the number of his attemps and if he asked for a hint. That score can be improved later by repeating the same course. 
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+[ ADD IMAGE OF HOW COURSE WITH NOT 100% SCORE LOOKS LIKE ]
 
-## Deploy on Vercel
+Tokens received are based on his score improvement and are fully on-chain. That allows any third party to integrate our internal currency and seamlessly build on top of Aptos Institute. Gathered tokens can later be burned to unlock more advanced courses on user's path tree, or "bump up" user's profile so companies that are hiring can see his onchain resume amongst others.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Onchain resume is a soulbound NFT representation of skills someone has acquired through Aptos Institute and can be used as proof-of-skill when looking for a job.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+[ ADD IMAGE OF HOW ONCHAIN RESUME LOOKS IN EXPLORER ]
+
+Our courses and materials are tailored to Aptos Ecosystem and combine jargon-less information with interactive coding experience which let's you write, compile and test your code in browser.
+
+[ ADD IMAGE OF OUR CODING EXPERIENCE ]
+
+## The Future
+
+Aptos Institute could eventually include not only Coding Courses, but also cover Wallets, DeFi and other topics that might be hard to grasp for beginners, making it a hub for Aptos newbies wheather they are devs or users.
+
+As an open-source public good project, we also aim to crowd-source materials from individuals or groups from everywhere in a world. Same goes for fact-checking and maintenance of existing materials. Think of this as your teacher having hundreds or thousands of brains instead of one!
+
+## Closing thoughts And Demo
+
+Developers are incentivized to go through a gamified hands-on curriculum, Companies are incentivized to hire devs with provable on-chain resume of their skills, and Aptos Ecosystem benefits!
+
+Check out our [Showcase Video](https://todo.com) for more details.
