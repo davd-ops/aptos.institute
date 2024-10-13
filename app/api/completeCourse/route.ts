@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
     await connectToDatabase();
 
-    const course = await Course.findById(courseId);
+    const course = await Course.findOne({ courseId });
     if (!course) {
       return NextResponse.json(
         { message: "Course not found" },

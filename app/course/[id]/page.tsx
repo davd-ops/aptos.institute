@@ -1,6 +1,6 @@
 "use client";
 import { Flex, Spinner } from "@chakra-ui/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/app/components/Navbar";
 import Challenge from "@/app/components/Challenge";
@@ -36,7 +36,86 @@ export default function ChallengePage() {
   const router = useRouter();
   const [courseUnlocked, setCourseUnlocked] = useState(false);
 
-  const completeCourse = async () => {
+  // Memoize the fetch function to avoid unnecessary re-renders
+  const fetchChallengesAndProgress = useCallback(async () => {
+    try {
+      const profileResponse = await fetch(`/api/profile`);
+      const profileData = await profileResponse.json();
+
+      if (!profileData.coursesUnlocked.includes(courseId)) {
+        router.push("/courses");
+        return;
+      } else {
+        setCourseUnlocked(true);
+      }
+
+      const [challengeResponse, progressResponse] = await Promise.all([
+        fetch(`/api/fetchChallengesByCourse?courseId=${courseId}`),
+        fetch(`/api/getUserProgress?address=${address}&courseId=${courseId}`),
+      ]);
+
+      const challengeData = await challengeResponse.json();
+      const progressData = await progressResponse.json();
+
+      if (challengeData.challenges) {
+        setChallenges(challengeData.challenges);
+      }
+
+      if (progressData.success && progressData.progress) {
+        const completedChallengesMap = progressData.progress.reduce(
+          (
+            acc: Record<string, { completed: boolean }>,
+            progressItem: ProgressItem
+          ) => {
+            acc[progressItem.challengeId] = {
+              completed: progressItem.completed,
+            };
+            return acc;
+          },
+          {}
+        );
+
+        setUserProgress(completedChallengesMap);
+
+        const nextUncompletedIndex = challengeData.challenges.findIndex(
+          (challenge: Challenge) =>
+            !completedChallengesMap[challenge.challengeId]?.completed
+        );
+
+        setCurrentChallengeIndex(
+          nextUncompletedIndex >= 0 ? nextUncompletedIndex : 0
+        );
+      }
+
+      setProgressLoaded(true);
+    } catch (error) {
+      console.error("Error fetching challenges or progress:", error);
+      router.push("/");
+    } finally {
+      setLoading(false);
+    }
+  }, [address, courseId, router]);
+
+  // Use `useEffect` with dependency array to only fetch data when address, isLoggedIn, or courseId changes
+  useEffect(() => {
+    if (isLoggedIn && address && courseId) {
+      fetchChallengesAndProgress();
+    }
+  }, [address, isLoggedIn, courseId, fetchChallengesAndProgress]);
+
+  useEffect(() => {
+    if (progressLoaded && challenges.length > 0) {
+      const allChallengesCompleted = challenges.every(
+        (challenge) => userProgress[challenge.challengeId]?.completed
+      );
+
+      if (allChallengesCompleted && !courseCompleted) {
+        completeCourse();
+      }
+    }
+  }, [progressLoaded, challenges, userProgress, courseCompleted]);
+
+  const completeCourse = useCallback(async () => {
     try {
       const response = await fetch("/api/completeCourse", {
         method: "POST",
@@ -53,90 +132,7 @@ export default function ChallengePage() {
     } catch (error) {
       console.error("Error completing course:", error);
     }
-  };
-
-  useEffect(() => {
-    const fetchChallengesAndProgress = async () => {
-      try {
-        const profileResponse = await fetch(`/api/profile`);
-        const profileData = await profileResponse.json();
-
-        if (!profileData.coursesUnlocked.includes(courseId)) {
-          router.push("/courses");
-          return;
-        } else {
-          setCourseUnlocked(true);
-        }
-
-        const [challengeResponse, progressResponse] = await Promise.all([
-          fetch(`/api/fetchChallengesByCourse?courseId=${courseId}`),
-          fetch(`/api/getUserProgress?address=${address}&courseId=${courseId}`),
-        ]);
-
-        const challengeData = await challengeResponse.json();
-        const progressData = await progressResponse.json();
-
-        if (challengeData.challenges) {
-          setChallenges(challengeData.challenges);
-        }
-
-        if (progressData.success && progressData.progress) {
-          const completedChallengesMap = progressData.progress.reduce(
-            (
-              acc: Record<string, { completed: boolean }>,
-              progressItem: ProgressItem
-            ) => {
-              acc[progressItem.challengeId] = {
-                completed: progressItem.completed,
-              };
-              return acc;
-            },
-            {}
-          );
-
-          setUserProgress(completedChallengesMap);
-
-          const nextUncompletedIndex = challengeData.challenges.findIndex(
-            (challenge: Challenge) =>
-              !completedChallengesMap[challenge.challengeId]?.completed
-          );
-
-          setCurrentChallengeIndex(
-            nextUncompletedIndex >= 0 ? nextUncompletedIndex : 0
-          );
-        }
-
-        setProgressLoaded(true);
-      } catch (error) {
-        console.error("Error fetching challenges or progress:", error);
-        router.push("/");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (isLoggedIn && address && courseId) {
-      fetchChallengesAndProgress();
-    }
-  }, [address, isLoggedIn, courseId, router, completeCourse]);
-
-  useEffect(() => {
-    if (progressLoaded && challenges.length > 0) {
-      const allChallengesCompleted = challenges.every(
-        (challenge) => userProgress[challenge.challengeId]?.completed
-      );
-
-      if (allChallengesCompleted && !courseCompleted) {
-        completeCourse();
-      }
-    }
-  }, [
-    progressLoaded,
-    challenges,
-    userProgress,
-    courseCompleted,
-    completeCourse,
-  ]);
+  }, [address, courseId]);
 
   const handleNextChallenge = () => {
     if (currentChallengeIndex < challenges.length - 1) {
