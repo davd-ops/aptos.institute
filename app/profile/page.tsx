@@ -5,45 +5,59 @@ import {
   Flex,
   Heading,
   Text,
-  Button,
-  VStack,
-  HStack,
   Spinner,
-  FormControl,
-  FormLabel,
-  Input,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
+  Tooltip,
+  VStack,
   IconButton,
-  Link,
-  useDisclosure,
+  Divider,
+  HStack,
+  useToast,
+  Button,
   AlertDialog,
   AlertDialogOverlay,
   AlertDialogContent,
   AlertDialogHeader,
   AlertDialogBody,
   AlertDialogFooter,
-  Tooltip,
-  useToast,
-  Accordion,
-  AccordionItem,
-  AccordionButton,
-  AccordionPanel,
-  AccordionIcon,
-  Divider,
 } from "@chakra-ui/react";
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { EditIcon } from "@chakra-ui/icons";
 import { LockIcon, UnlockIcon } from "@chakra-ui/icons";
 import { FaGithub, FaGlobe } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
+import { useRouter } from "next/navigation";
 import Navbar from "@/app/components/Navbar";
-import Footer from "../components/Footer";
+import Footer from "@/app/components/Footer";
+
+interface Challenge {
+  challengeId: string;
+  courseId: string;
+  name: string;
+  attempts: number;
+  hintsUsed: number;
+  completed: boolean;
+}
+
+interface Course {
+  courseId: string;
+  title: string;
+  description: string;
+  price: number;
+  rewards: number;
+  unlocked: boolean;
+  challenges: Challenge[];
+}
 
 interface ProfileProps {
   address: string;
   userName: string;
   balance: number;
-  coursesCompleted: number;
+  coursesUnlocked: string[];
+  coursesCompleted: string[];
   twitter?: string;
   github?: string;
   website?: string;
@@ -51,151 +65,70 @@ interface ProfileProps {
 
 const Profile = () => {
   const [profile, setProfile] = useState<ProfileProps | null>(null);
-  const [userName, setUserName] = useState<string>("");
-  const [twitter, setTwitter] = useState<string>("");
-  const [github, setGithub] = useState<string>("");
-  const [website, setWebsite] = useState<string>("");
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [pendingCourse, setPendingCourse] = useState<Course | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
   const cancelRef = useRef<HTMLButtonElement>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const router = useRouter();
   const toast = useToast();
+  const router = useRouter();
 
-  const courses = [
-    {
-      id: 1,
-      title: "Aptos Blockchain Basics",
-      challengesCompleted: 10,
-      totalChallenges: 10,
-      unlocked: true,
-      challenges: [
-        {
-          title: "Set Up Wallet",
-          attempts: 2,
-          hintsUsed: 1,
-          status: "Completed",
-        },
-        {
-          title: "Transfer Tokens",
-          attempts: 3,
-          hintsUsed: 0,
-          status: "Completed",
-        },
-        {
-          title: "Deploy Smart Contract",
-          attempts: 1,
-          hintsUsed: 2,
-          status: "Completed",
-        },
-      ],
-    },
-    {
-      id: 2,
-      title: "Advanced Move Programming",
-      challengesCompleted: 5,
-      totalChallenges: 10,
-      unlocked: false,
-      challenges: [
-        {
-          title: "Define Custom Structs",
-          attempts: 4,
-          hintsUsed: 1,
-          status: "Completed",
-        },
-        {
-          title: "Implement Modules",
-          attempts: 2,
-          hintsUsed: 0,
-          status: "Completed",
-        },
-        {
-          title: "Call External Contracts",
-          attempts: 3,
-          hintsUsed: 2,
-          status: "In Progress",
-        },
-        {
-          title: "Write Unit Tests",
-          attempts: 1,
-          hintsUsed: 1,
-          status: "Not Started",
-        },
-      ],
-    },
-  ];
+  const onClose = () => setIsOpen(false);
+  const onOpen = (course: Course) => {
+    setPendingCourse(course);
+    setIsOpen(true);
+  };
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await fetch("/api/profile", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
+  const handleBuyCourse = async () => {
+    if (pendingCourse && profile) {
+      if (profile.balance >= pendingCourse.price) {
+        try {
+          const response = await fetch("/api/unlockCourse", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              courseId: pendingCourse.courseId,
+              price: pendingCourse.price,
+            }),
+          });
 
-        if (response.ok) {
           const data = await response.json();
-          setProfile(data);
-          setUserName(data.userName);
-          setTwitter(data.twitter || "");
-          setGithub(data.github || "");
-          setWebsite(data.website || "");
-        } else {
-          router.push("/");
-        }
-      } catch (error) {
-        console.error("Error fetching profile:", error);
-        router.push("/");
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    fetchProfile();
-  }, [router]);
+          if (data.success) {
+            toast({
+              title: "Course Unlocked",
+              description: `You have successfully unlocked the course "${pendingCourse.title}".`,
+              status: "success",
+              duration: 3000,
+              isClosable: true,
+              position: "top-right",
+            });
 
-  const handleUpdateProfile = async () => {
-    if (profile) {
-      try {
-        const response = await fetch(`/api/updateUser`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            address: profile.address,
-            name: userName,
-            twitter,
-            github,
-            website,
-          }),
-        });
-
-        if (response.ok) {
-          setProfile((prev) => ({
-            ...prev!,
-            userName,
-            twitter,
-            github,
-            website,
-          }));
-          onClose();
+            onClose();
+            router.push(`/course/${pendingCourse.courseId}`);
+          } else {
+            throw new Error(data.message);
+          }
+        } catch (error) {
           toast({
-            title: "Profile Updated",
-            description: "Your profile was updated successfully.",
-            status: "success",
+            title: "Purchase Error",
+            description:
+              error instanceof Error
+                ? error.message
+                : "Failed to unlock the course.",
+            status: "error",
             duration: 3000,
             isClosable: true,
             position: "top-right",
           });
-        } else {
-          throw new Error("Profile update failed");
         }
-      } catch (error) {
-        console.error("Error updating profile:", error);
+      } else {
         toast({
-          title: "Error",
-          description: "Failed to update your profile.",
-          status: "error",
+          title: "Insufficient Balance",
+          description: "You don't have enough tokens to purchase this course.",
+          status: "warning",
           duration: 3000,
           isClosable: true,
           position: "top-right",
@@ -203,6 +136,73 @@ const Profile = () => {
       }
     }
   };
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await fetch("/api/profile");
+        const profileData = await response.json();
+        setProfile(profileData);
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  useEffect(() => {
+    if (profile?.address) {
+      const fetchCoursesAndChallenges = async () => {
+        try {
+          const response = await fetch("/api/fetchCourses");
+          const coursesData = await response.json();
+          const coursesArray = coursesData.courses;
+
+          const coursePromises = coursesArray.map(async (course: Course) => {
+            const challengesResponse = await fetch(
+              `/api/fetchChallengesByCourse?courseId=${course.courseId}`
+            );
+            const challengesData = await challengesResponse.json();
+
+            const progressResponse = await fetch(
+              `/api/getUserProgress?address=${profile.address}&courseId=${course.courseId}`
+            );
+            const progressData = await progressResponse.json();
+
+            const challengesWithProgress = challengesData.challenges.map(
+              (challenge: Challenge) => {
+                const progress = progressData.progress.find(
+                  (p: any) => p.challengeId === challenge.challengeId
+                );
+                return {
+                  ...challenge,
+                  attempts: progress?.attempts || 0,
+                  hintsUsed: progress?.hintsUsed || 0,
+                  completed: progress?.completed || false,
+                };
+              }
+            );
+
+            return {
+              ...course,
+              unlocked: profile.coursesUnlocked.includes(course.courseId),
+              challenges: challengesWithProgress,
+            };
+          });
+
+          const detailedCourses = await Promise.all(coursePromises);
+          setCourses(detailedCourses);
+        } catch (error) {
+          console.error("Error fetching courses and challenges:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchCoursesAndChallenges();
+    }
+  }, [profile?.address]);
 
   const shortAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -214,10 +214,6 @@ const Profile = () => {
         <Spinner size="xl" />
       </Flex>
     );
-  }
-
-  if (!profile) {
-    return <p>Redirecting...</p>;
   }
 
   return (
@@ -244,39 +240,33 @@ const Profile = () => {
           mx="auto"
           w="100%"
         >
+          {/* Profile Details Section */}
           <Box
             flexBasis={{ base: "100%", md: "48%" }}
             p={6}
             bg="gray.800"
             borderRadius="md"
-            position="relative"
           >
             <VStack align="start" spacing={6} color="white">
-              <FormControl>
-                <Text fontSize="2xl" fontWeight="bold">
-                  {profile.userName}
-                </Text>
-              </FormControl>
-
+              <Text fontSize="2xl" fontWeight="bold">
+                {profile?.userName}
+              </Text>
               <Box>
                 <Text fontSize="lg" fontWeight="bold">
                   Wallet Address:
                 </Text>
-                <Tooltip
-                  label={profile.address}
-                  aria-label="Full wallet address"
-                >
-                  <Text cursor="pointer">{shortAddress(profile.address)}</Text>
+                <Tooltip label={profile?.address}>
+                  <Text cursor="pointer">
+                    {shortAddress(profile?.address || "")}
+                  </Text>
                 </Tooltip>
               </Box>
-
               <Box>
                 <Text fontSize="lg" fontWeight="bold">
                   Institute Token Balance:
                 </Text>
-                <Text>{profile.balance} Tokens</Text>
+                <Text>{profile?.balance} Tokens</Text>
               </Box>
-
               <Box>
                 <Text fontSize="lg" fontWeight="bold">
                   Social Links:
@@ -286,68 +276,44 @@ const Profile = () => {
                     aria-label="Twitter"
                     icon={<FaXTwitter />}
                     colorScheme="twitter"
-                    isDisabled={!profile.twitter}
-                    as={profile.twitter ? Link : undefined}
+                    isDisabled={!profile?.twitter}
+                    as={profile?.twitter ? "a" : undefined}
                     href={
-                      profile.twitter
-                        ? profile.twitter.startsWith("@")
-                          ? `https://x.com/${profile.twitter.slice(1)}`
-                          : `https://x.com/${profile.twitter}`
+                      profile?.twitter
+                        ? `https://x.com/${profile.twitter.slice(1)}`
                         : undefined
                     }
-                    isExternal={profile.twitter ? true : undefined}
                   />
-
                   <IconButton
                     aria-label="GitHub"
                     icon={<FaGithub />}
                     colorScheme="gray"
-                    isDisabled={!profile.github}
-                    as={profile.github ? Link : undefined}
+                    isDisabled={!profile?.github}
+                    as={profile?.github ? "a" : undefined}
                     href={
-                      profile.github
-                        ? profile.github.startsWith("@")
-                          ? `https://github.com/${profile.github.slice(1)}`
-                          : `https://github.com/${profile.github}`
+                      profile?.github
+                        ? `https://github.com/${profile.github.slice(1)}`
                         : undefined
                     }
-                    isExternal={profile.github ? true : undefined}
                   />
-
                   <IconButton
                     aria-label="Website"
                     icon={<FaGlobe />}
                     colorScheme="teal"
-                    isDisabled={!profile.website}
-                    as={profile.website ? Link : undefined}
+                    isDisabled={!profile?.website}
+                    as={profile?.website ? "a" : undefined}
                     href={
-                      profile.website
-                        ? profile.website.startsWith("http")
-                          ? profile.website
-                          : `https://${profile.website}`
+                      profile?.website
+                        ? `https://${profile.website}`
                         : undefined
                     }
-                    isExternal={profile.website ? true : undefined}
                   />
                 </HStack>
               </Box>
-
-              <IconButton
-                aria-label="Edit Profile"
-                icon={<EditIcon />}
-                size="sm"
-                position="absolute"
-                top={4}
-                right={4}
-                onClick={onOpen}
-              />
             </VStack>
           </Box>
 
-          <Flex align="center" display={{ base: "none", md: "flex" }}>
-            <Box height="100%" width="2px" bg="gray.600" />
-          </Flex>
-
+          {/* On-Chain CV Section */}
           <Box
             flexBasis={{ base: "100%", md: "48%" }}
             p={6}
@@ -364,7 +330,7 @@ const Profile = () => {
 
             <Accordion allowMultiple w="100%">
               {courses.map((course) => (
-                <AccordionItem key={course.id} border="none">
+                <AccordionItem key={course.courseId} border="none">
                   <h2>
                     <AccordionButton
                       _expanded={{ bg: "gray.600", color: "white" }}
@@ -375,6 +341,7 @@ const Profile = () => {
                       mb={2}
                       _hover={{ bg: "gray.600" }}
                       color="white"
+                      onClick={() => !course.unlocked && onOpen(course)}
                     >
                       {course.unlocked ? (
                         <UnlockIcon boxSize={5} color="green.400" mr={4} />
@@ -387,8 +354,9 @@ const Profile = () => {
                           {course.title}
                         </Text>
                         <Text fontSize="sm" color="gray.400">
-                          Completed: {course.challengesCompleted}/
-                          {course.totalChallenges} challenges
+                          Completed:{" "}
+                          {course.challenges.filter((c) => c.completed).length}/
+                          {course.challenges.length} challenges
                         </Text>
                       </Box>
 
@@ -402,15 +370,24 @@ const Profile = () => {
                         {course.challenges.map((challenge, index) => (
                           <Box key={index} textAlign="center">
                             <Text color="teal.300" fontWeight="bold">
-                              {challenge.title}
+                              {challenge.name}
                             </Text>
                             <Text color="gray.300">
                               Attempts: {challenge.attempts} | Hints Used:{" "}
-                              {challenge.hintsUsed} | Status: {challenge.status}
+                              {challenge.hintsUsed} |{" "}
+                              {challenge.completed ? "Completed" : "Incomplete"}
                             </Text>
                             <Divider />
                           </Box>
                         ))}
+                        <Button
+                          colorScheme="teal"
+                          onClick={() =>
+                            router.push(`/course/${course.courseId}`)
+                          }
+                        >
+                          Check Course
+                        </Button>
                       </VStack>
                     </AccordionPanel>
                   )}
@@ -429,54 +406,36 @@ const Profile = () => {
         <AlertDialogOverlay>
           <AlertDialogContent>
             <AlertDialogHeader fontSize="lg" fontWeight="bold">
-              Edit Profile
+              Purchase Course
             </AlertDialogHeader>
-
             <AlertDialogBody>
-              <FormControl>
-                <FormLabel>Name</FormLabel>
-                <Input
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                />
-              </FormControl>
-              <FormControl mt={4}>
-                <FormLabel>X (Twitter)</FormLabel>
-                <Input
-                  placeholder="X Handle"
-                  value={twitter}
-                  onChange={(e) => setTwitter(e.target.value)}
-                />
-              </FormControl>
-              <FormControl mt={4}>
-                <FormLabel>GitHub</FormLabel>
-                <Input
-                  placeholder="GitHub Username"
-                  value={github}
-                  onChange={(e) => setGithub(e.target.value)}
-                />
-              </FormControl>
-              <FormControl mt={4}>
-                <FormLabel>Website</FormLabel>
-                <Input
-                  placeholder="https://example.com"
-                  value={website}
-                  onChange={(e) => setWebsite(e.target.value)}
-                />
-              </FormControl>
+              {pendingCourse && (
+                <>
+                  <Text>
+                    You need to unlock the course{" "}
+                    <strong>{pendingCourse.title}</strong> for{" "}
+                    <strong>{pendingCourse.price} Tokens</strong> before
+                    starting.
+                  </Text>
+                  <Text mt={2}>
+                    Your current balance is{" "}
+                    <strong>{profile?.balance} Tokens</strong>.
+                  </Text>
+                </>
+              )}
             </AlertDialogBody>
-
             <AlertDialogFooter>
               <Button ref={cancelRef} onClick={onClose}>
                 Cancel
               </Button>
-              <Button colorScheme="teal" onClick={handleUpdateProfile} ml={3}>
-                Save
+              <Button colorScheme="teal" onClick={handleBuyCourse} ml={3}>
+                Buy
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialogOverlay>
       </AlertDialog>
+
       <Footer />
     </>
   );
