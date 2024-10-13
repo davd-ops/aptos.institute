@@ -26,7 +26,23 @@ export async function POST(req: NextRequest) {
 
     const { title: courseName, rewards: reward } = course;
 
-    const user = await User.findOneAndUpdate(
+    const user = await User.findOne({ address });
+
+    if (!user) {
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
+    }
+
+    if (user.coursesCompleted.includes(courseId)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Course '${courseName}' has already been completed.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    const updatedUser = await User.findOneAndUpdate(
       { address },
       {
         $addToSet: { coursesCompleted: courseId },
@@ -35,16 +51,12 @@ export async function POST(req: NextRequest) {
       { new: true }
     );
 
-    if (!user) {
-      return NextResponse.json({ message: "User not found" }, { status: 404 });
-    }
-
     return NextResponse.json(
       {
         success: true,
         reward,
         courseName,
-        newBalance: user.balance,
+        newBalance: updatedUser.balance,
         message: `Course '${courseName}' completed and reward of ${reward} tokens issued`,
       },
       { status: 200 }

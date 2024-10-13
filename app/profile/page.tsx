@@ -24,9 +24,12 @@ import {
   AlertDialogHeader,
   AlertDialogBody,
   AlertDialogFooter,
+  FormControl,
+  FormLabel,
+  Input,
 } from "@chakra-ui/react";
 import { useState, useEffect, useRef } from "react";
-import { LockIcon, UnlockIcon } from "@chakra-ui/icons";
+import { LockIcon, UnlockIcon, EditIcon } from "@chakra-ui/icons";
 import { FaGithub, FaGlobe } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
 import { useRouter } from "next/navigation";
@@ -63,17 +66,34 @@ interface ProfileProps {
   website?: string;
 }
 
+interface Progress {
+  challengeId: string;
+  courseId: string;
+  address: string;
+  attempts: number;
+  hintsUsed: number;
+  completed: boolean;
+}
+
 const Profile = () => {
   const [profile, setProfile] = useState<ProfileProps | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendingCourse, setPendingCourse] = useState<Course | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const [userName, setUserName] = useState<string>("");
+  const [twitter, setTwitter] = useState<string>("");
+  const [github, setGithub] = useState<string>("");
+  const [website, setWebsite] = useState<string>("");
   const toast = useToast();
   const router = useRouter();
 
   const onClose = () => setIsOpen(false);
+  const onEditProfileClose = () => setEditProfileOpen(false);
+  const onEditProfileOpen = () => setEditProfileOpen(true);
+
   const onOpen = (course: Course) => {
     setPendingCourse(course);
     setIsOpen(true);
@@ -137,12 +157,64 @@ const Profile = () => {
     }
   };
 
+  const handleUpdateProfile = async () => {
+    if (profile) {
+      try {
+        const response = await fetch("/api/updateUser", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            address: profile.address,
+            name: userName,
+            twitter,
+            github,
+            website,
+          }),
+        });
+
+        if (response.ok) {
+          setProfile((prev) => ({
+            ...prev!,
+            userName,
+            twitter,
+            github,
+            website,
+          }));
+          onEditProfileClose();
+          toast({
+            title: "Profile Updated",
+            description: "Your profile was updated successfully.",
+            status: "success",
+            duration: 3000,
+            isClosable: true,
+            position: "top-right",
+          });
+        } else {
+          throw new Error("Profile update failed");
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to update your profile.",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+          position: "top-right",
+        });
+      }
+    }
+  };
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const response = await fetch("/api/profile");
         const profileData = await response.json();
         setProfile(profileData);
+        setUserName(profileData.userName);
+        setTwitter(profileData.twitter || "");
+        setGithub(profileData.github || "");
+        setWebsite(profileData.website || "");
       } catch (error) {
         console.error("Error fetching profile:", error);
       }
@@ -172,9 +244,11 @@ const Profile = () => {
 
             const challengesWithProgress = challengesData.challenges.map(
               (challenge: Challenge) => {
-                const progress = progressData.progress.find(
-                  (p: any) => p.challengeId === challenge.challengeId
-                );
+                const progress: Progress | undefined =
+                  progressData.progress.find(
+                    (p: Progress) => p.challengeId === challenge.challengeId
+                  );
+
                 return {
                   ...challenge,
                   attempts: progress?.attempts || 0,
@@ -186,7 +260,7 @@ const Profile = () => {
 
             return {
               ...course,
-              unlocked: profile.coursesUnlocked.includes(course.courseId),
+              unlocked: profile?.coursesUnlocked.includes(course.courseId),
               challenges: challengesWithProgress,
             };
           });
@@ -206,6 +280,11 @@ const Profile = () => {
 
   const shortAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
+  // Function to remove only @ symbol from social handles
+  const removeAtSymbol = (handle: string) => {
+    return handle.startsWith("@") ? handle.slice(1) : handle;
   };
 
   if (loading) {
@@ -246,6 +325,7 @@ const Profile = () => {
             p={6}
             bg="gray.800"
             borderRadius="md"
+            position="relative"
           >
             <VStack align="start" spacing={6} color="white">
               <Text fontSize="2xl" fontWeight="bold">
@@ -280,9 +360,11 @@ const Profile = () => {
                     as={profile?.twitter ? "a" : undefined}
                     href={
                       profile?.twitter
-                        ? `https://x.com/${profile.twitter.slice(1)}`
+                        ? `https://x.com/${removeAtSymbol(profile.twitter)}`
                         : undefined
                     }
+                    target="_blank"
+                    rel="noopener noreferrer"
                   />
                   <IconButton
                     aria-label="GitHub"
@@ -292,9 +374,11 @@ const Profile = () => {
                     as={profile?.github ? "a" : undefined}
                     href={
                       profile?.github
-                        ? `https://github.com/${profile.github.slice(1)}`
+                        ? `https://github.com/${removeAtSymbol(profile.github)}`
                         : undefined
                     }
+                    target="_blank"
+                    rel="noopener noreferrer"
                   />
                   <IconButton
                     aria-label="Website"
@@ -304,12 +388,25 @@ const Profile = () => {
                     as={profile?.website ? "a" : undefined}
                     href={
                       profile?.website
-                        ? `https://${profile.website}`
+                        ? profile.website.startsWith("http")
+                          ? profile.website
+                          : `https://${profile.website}`
                         : undefined
                     }
+                    target="_blank"
+                    rel="noopener noreferrer"
                   />
                 </HStack>
               </Box>
+              <IconButton
+                aria-label="Edit Profile"
+                icon={<EditIcon />}
+                size="sm"
+                position="absolute"
+                top={4}
+                right={4}
+                onClick={onEditProfileOpen}
+              />
             </VStack>
           </Box>
 
@@ -430,6 +527,62 @@ const Profile = () => {
               </Button>
               <Button colorScheme="teal" onClick={handleBuyCourse} ml={3}>
                 Buy
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
+
+      {/* Edit Profile Modal */}
+      <AlertDialog
+        isOpen={editProfileOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={onEditProfileClose}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Edit Profile
+            </AlertDialogHeader>
+            <AlertDialogBody>
+              <FormControl>
+                <FormLabel>Name</FormLabel>
+                <Input
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                />
+              </FormControl>
+              <FormControl mt={4}>
+                <FormLabel>X (Twitter)</FormLabel>
+                <Input
+                  placeholder="X Handle"
+                  value={twitter}
+                  onChange={(e) => setTwitter(e.target.value)}
+                />
+              </FormControl>
+              <FormControl mt={4}>
+                <FormLabel>GitHub</FormLabel>
+                <Input
+                  placeholder="GitHub Username"
+                  value={github}
+                  onChange={(e) => setGithub(e.target.value)}
+                />
+              </FormControl>
+              <FormControl mt={4}>
+                <FormLabel>Website</FormLabel>
+                <Input
+                  placeholder="https://example.com"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                />
+              </FormControl>
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={onEditProfileClose}>
+                Cancel
+              </Button>
+              <Button colorScheme="teal" onClick={handleUpdateProfile} ml={3}>
+                Save
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
