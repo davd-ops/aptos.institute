@@ -62,6 +62,41 @@ module AptosInstitute::developer_resume {
         create_resume_collection(sender);
     }
 
+    #[view]
+    /// Returns the total points of the resume
+    public fun resume_total_points(token: Object<DeveloperResumeToken>): u64 acquires DeveloperProgress {
+        let progress = borrow_global<DeveloperProgress>(object::object_address(&token));
+        progress.total_points
+    }
+
+    #[view]
+    /// Returns the list of completed courses and scores
+    public fun resume_course_scores(token: Object<DeveloperResumeToken>): (vector<u64>, vector<u64>) acquires DeveloperProgress {
+        let progress = borrow_global<DeveloperProgress>(object::object_address(&token));
+        (progress.completed_courses, progress.course_scores)
+    }
+
+    #[view]
+    /// Returns the resume rank based on completed courses
+    public fun resume_rank(token: Object<DeveloperResumeToken>): String {
+        property_map::read_string(&token, &string::utf8(b"Rank"))
+    }
+
+    #[view]
+    /// Returns the course details for a given course ID
+    public fun get_course_details(
+        token: Object<DeveloperResumeToken>, 
+        course_id: String
+    ): String {
+        let course_property_name = string::utf8(b"CourseID_");
+        string::append(&mut course_property_name, course_id);
+
+        // Use the `token` object directly with `property_map::read_string`
+        let course_details = property_map::read_string(&token, &course_property_name);
+
+        course_details
+    }
+
     /// Creates the developer resume collection.
     fun create_resume_collection(creator: &signer) {
         let description = string::utf8(COLLECTION_DESCRIPTION);
