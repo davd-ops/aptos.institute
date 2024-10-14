@@ -29,6 +29,15 @@ export default function Navbar() {
               Courses
             </Button>
           </Link>
+          <Link href="/hire" _hover={{ textDecoration: "none" }}>
+            <Button
+              variant="ghost"
+              color="white"
+              _hover={{ bg: "gray.700", color: "white" }}
+            >
+              Hire
+            </Button>
+          </Link>
           {isLoggedIn ? (
             <>
               <Link href="/profile" _hover={{ textDecoration: "none" }}>
