@@ -126,21 +126,9 @@ const CourseList = () => {
       });
       const data = await response.json();
 
-      if (data.success) {
-        setUserBalance(data.balance);
-      } else {
-        throw new Error("Failed to fetch balance");
-      }
+      setUserBalance(data.balance);
     } catch (error) {
       console.error("Error fetching user balance:", error);
-      toast({
-        title: "Balance Error",
-        description: "Failed to fetch user balance.",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-        position: "top-right",
-      });
     }
   };
 
