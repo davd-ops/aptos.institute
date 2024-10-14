@@ -62,6 +62,7 @@ interface ProfileProps {
   balance: number;
   coursesUnlocked: string[];
   coursesCompleted: string[];
+  courseScores: { courseId: string; score: number }[];
   twitter?: string;
   github?: string;
   website?: string;
@@ -335,6 +336,13 @@ const Profile = () => {
     }
   }, [profile?.address]);
 
+  const getCourseScore = (courseId: string): number | null => {
+    const courseScore = profile?.courseScores?.find(
+      (score) => score.courseId === courseId
+    );
+    return courseScore ? courseScore.score : null;
+  };
+
   const shortAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
@@ -477,11 +485,6 @@ const Profile = () => {
             flexDirection="column"
             alignItems="center"
           >
-            <Text color="white" mb={4} textAlign="center">
-              Below are the courses you’ve completed or unlocked. Click on a
-              course to see your challenge progress.
-            </Text>
-
             <Accordion allowMultiple w="100%">
               {courses.map((course) => (
                 <AccordionItem key={course.courseId} border="none">
@@ -512,8 +515,12 @@ const Profile = () => {
                           {course.challenges.filter((c) => c.completed).length}/
                           {course.challenges.length} challenges
                         </Text>
+                        {getCourseScore(course.courseId) && (
+                          <Text fontSize="sm" color="yellow.400">
+                            Score: {getCourseScore(course.courseId)}
+                          </Text>
+                        )}
                       </Box>
-
                       <AccordionIcon />
                     </AccordionButton>
                   </h2>

@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
         balance: user.balance,
         coursesUnlocked: user.coursesUnlocked,
         coursesCompleted: user.coursesCompleted,
+        courseScores: user.courseScores,
         twitter: user.twitter,
         github: user.github,
         website: user.website,
