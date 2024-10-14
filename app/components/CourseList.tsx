@@ -24,6 +24,7 @@ import {
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@/app/context/WalletContext";
+import useWalletConnect from "@/app/hooks/walletConnect";
 
 interface Course {
   _id: string;
@@ -58,15 +59,11 @@ const CourseList = () => {
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [pendingCourse, setPendingCourse] = useState<Course | null>(null);
+  const [userBalance, setUserBalance] = useState<number>(0); // Store user balance here
 
-  const {
-    isLoggedIn,
-    address,
-    connectWallet,
-    userBalance,
-    fetchUserProfile,
-    userProgress,
-  } = useWallet();
+  const { sendTransaction } = useWalletConnect();
+  const { isLoggedIn, address, connectWallet, fetchUserProfile, userProgress } =
+    useWallet();
   const router = useRouter();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -115,8 +112,37 @@ const CourseList = () => {
   useEffect(() => {
     if (isLoggedIn && address) {
       fetchUserProfile();
+      fetchUserBalance(); // Fetch balance when logged in
     }
   }, [isLoggedIn, address]);
+
+  // Fetch user balance from the API
+  const fetchUserBalance = async () => {
+    try {
+      const response = await fetch("/api/getTokens", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address }),
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        setUserBalance(data.balance);
+      } else {
+        throw new Error("Failed to fetch balance");
+      }
+    } catch (error) {
+      console.error("Error fetching user balance:", error);
+      toast({
+        title: "Balance Error",
+        description: "Failed to fetch user balance.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+        position: "top-right",
+      });
+    }
+  };
 
   const handleFilterClick = (filter: string) => {
     setActiveFilters((prevFilters) =>
@@ -158,37 +184,65 @@ const CourseList = () => {
     }
   };
 
+  // Updated handleBuyCourse to fetch balance and proceed with transaction and unlocking course
   const handleBuyCourse = async () => {
     if (pendingCourse) {
       if (userBalance >= pendingCourse.price) {
         try {
-          const response = await fetch("/api/unlockCourse", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              courseId: pendingCourse.courseId,
-              price: pendingCourse.price,
-            }),
-          });
+          const tokenAmount = pendingCourse.price * Math.pow(10, 7);
 
-          const data = await response.json();
+          // Send the transaction using the sendTransaction function
+          const tx = await sendTransaction(
+            [tokenAmount],
+            "0x0f017889b00a39e7c4e292f0c38931695bd4d0d73445fc7a7943994d936b29d0::quest_token::burn",
+            "entry_function_payload",
+            []
+          );
 
-          if (data.success) {
+          // Check if the token burn transaction was successful
+          if (tx.success) {
             toast({
-              title: "Course Unlocked",
-              description: `You have successfully unlocked the course "${pendingCourse.title}".`,
+              title: "Tokens Burned",
+              description: `Successfully burned ${pendingCourse.price} tokens.`,
               status: "success",
               duration: 3000,
               isClosable: true,
               position: "top-right",
             });
 
-            onClose();
-            router.push(`/course/${pendingCourse.courseId}`);
+            // Unlock the course after the burn transaction is successful
+            const unlockResponse = await fetch("/api/unlockCourse", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                courseId: pendingCourse.courseId,
+                price: pendingCourse.price,
+              }),
+            });
+
+            const unlockData = await unlockResponse.json();
+
+            // Check if the course unlock was successful
+            if (unlockData.success) {
+              toast({
+                title: "Course Unlocked",
+                description: `You have successfully unlocked the course "${pendingCourse.title}".`,
+                status: "success",
+                duration: 3000,
+                isClosable: true,
+                position: "top-right",
+              });
+
+              // Navigate to the course page
+              onClose();
+              router.push(`/course/${pendingCourse.courseId}`);
+            } else {
+              throw new Error(unlockData.message);
+            }
           } else {
-            throw new Error(data.message);
+            throw new Error("Transaction failed.");
           }
         } catch (error) {
           toast({
@@ -196,7 +250,7 @@ const CourseList = () => {
             description:
               error instanceof Error
                 ? error.message
-                : "Failed to unlock the course.",
+                : "Failed to complete the purchase.",
             status: "error",
             duration: 3000,
             isClosable: true,

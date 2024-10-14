@@ -22,6 +22,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@/app/context/WalletContext";
+import useWalletConnect from "@/app/hooks/walletConnect"; // Import the wallet connect hook
 
 interface Course {
   _id: string;
@@ -49,17 +50,13 @@ const FeaturedCourses = () => {
   const cancelRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
 
-  const {
-    isLoggedIn,
-    connectWallet,
-    fetchUserProfile,
-    address,
-    userProgress,
-    userBalance,
-  } = useWallet();
+  const { isLoggedIn, connectWallet, fetchUserProfile, address, userProgress } =
+    useWallet();
+  const { sendTransaction } = useWalletConnect(); // Use the sendTransaction function from the wallet connect hook
 
   const [pendingCourse, setPendingCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userBalance, setUserBalance] = useState<number | null>(null); // State to store fetched balance
   const toast = useToast();
 
   useEffect(() => {
@@ -80,6 +77,28 @@ const FeaturedCourses = () => {
     fetchCourses();
   }, []);
 
+  // Fetch user's token balance
+  const fetchUserBalance = async (userAddress: string) => {
+    try {
+      const response = await fetch("/api/getTokens", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ address: userAddress }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setUserBalance(data.balance); // Set the fetched balance
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching token balance:", error);
+    }
+  };
+
   const handleNext = () => {
     setDirection(1);
     setCurrentIndex((prevIndex) => (prevIndex + 1) % featuredCourses.length);
@@ -99,6 +118,11 @@ const FeaturedCourses = () => {
       return;
     }
 
+    // Fetch user balance before starting the course
+    if (address) {
+      await fetchUserBalance(address);
+    }
+
     if (userProgress[course.courseId]?.unlocked) {
       router.push(`/course/${course.courseId}`);
     } else {
@@ -108,36 +132,63 @@ const FeaturedCourses = () => {
   };
 
   const handleBuyCourse = async () => {
-    if (pendingCourse) {
+    if (pendingCourse && userBalance !== null) {
       if (userBalance >= pendingCourse.price) {
         try {
-          const response = await fetch("/api/unlockCourse", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              courseId: pendingCourse.courseId,
-              price: pendingCourse.price,
-            }),
-          });
+          const tokenAmount = pendingCourse.price * Math.pow(10, 7); // Convert to the correct token unit
 
-          const data = await response.json();
+          // Send the transaction using the sendTransaction function
+          const tx = await sendTransaction(
+            [tokenAmount],
+            "0x0f017889b00a39e7c4e292f0c38931695bd4d0d73445fc7a7943994d936b29d0::quest_token::burn",
+            "entry_function_payload",
+            []
+          );
 
-          if (data.success) {
+          // Check if the transaction was successful
+          if (tx.success) {
             toast({
-              title: "Course Unlocked",
-              description: `You have successfully unlocked the course "${pendingCourse.title}".`,
+              title: "Tokens Burned",
+              description: `Successfully burned ${pendingCourse.price} tokens.`,
               status: "success",
               duration: 3000,
               isClosable: true,
               position: "top-right",
             });
 
-            closePurchaseDialog();
-            router.push(`/course/${pendingCourse.courseId}`);
+            // Unlock the course after the burn transaction is successful
+            const unlockResponse = await fetch("/api/unlockCourse", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                courseId: pendingCourse.courseId,
+                price: pendingCourse.price,
+              }),
+            });
+
+            const unlockData = await unlockResponse.json();
+
+            // Check if the course unlock was successful
+            if (unlockData.success) {
+              toast({
+                title: "Course Unlocked",
+                description: `You have successfully unlocked the course "${pendingCourse.title}".`,
+                status: "success",
+                duration: 3000,
+                isClosable: true,
+                position: "top-right",
+              });
+
+              // Navigate to the course page
+              closePurchaseDialog();
+              router.push(`/course/${pendingCourse.courseId}`);
+            } else {
+              throw new Error(unlockData.message);
+            }
           } else {
-            throw new Error(data.message);
+            throw new Error("Transaction failed.");
           }
         } catch (error) {
           toast({
@@ -145,7 +196,7 @@ const FeaturedCourses = () => {
             description:
               error instanceof Error
                 ? error.message
-                : "Failed to unlock the course.",
+                : "Failed to complete the purchase.",
             status: "error",
             duration: 3000,
             isClosable: true,
@@ -171,6 +222,7 @@ const FeaturedCourses = () => {
       closeLoginDialog();
       if (isLoggedIn && address) {
         fetchUserProfile();
+        await fetchUserBalance(address); // Fetch the balance on login
         if (pendingCourse) {
           handleStartCourse(pendingCourse);
         }
@@ -304,6 +356,7 @@ const FeaturedCourses = () => {
         </Flex>
       </motion.div>
 
+      {/* Pagination Dots */}
       <HStack
         spacing={2}
         justify="center"
@@ -329,6 +382,7 @@ const FeaturedCourses = () => {
         ))}
       </HStack>
 
+      {/* Alert Dialogs */}
       <AlertDialog
         isOpen={isLoginDialogOpen}
         leastDestructiveRef={cancelRef}
