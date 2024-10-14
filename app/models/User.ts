@@ -5,6 +5,10 @@ interface IUser extends Document {
   userName: string;
   coursesUnlocked: string[];
   coursesCompleted: string[];
+  courseScores: {
+    courseId: string;
+    score: number;
+  }[];
   balance: number;
   twitter: string;
   github: string;
@@ -28,6 +32,15 @@ const userSchema = new Schema<IUser>({
   },
   coursesCompleted: {
     type: [String],
+    default: [],
+  },
+  courseScores: {
+    type: [
+      {
+        courseId: String,
+        score: Number,
+      },
+    ],
     default: [],
   },
   balance: {

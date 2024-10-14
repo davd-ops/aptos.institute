@@ -19,8 +19,8 @@ const courses = [
       "Learn how to write, deploy, and manage smart contracts using the MOVE language on Aptos.",
     tags: ["MOVE", "Aptos", "Intermediate"],
     imageUrl: "/images/move.png",
-    price: 0,
-    rewards: 15,
+    price: 10,
+    rewards: 30,
   },
   {
     courseId: "course_3",
