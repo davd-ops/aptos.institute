@@ -6,6 +6,12 @@ import {
   SignedMessageResponse,
   WalletConnectReturn,
 } from "@/app/types/walletConnect";
+import {
+  Aptos,
+  AptosConfig,
+  Network,
+  NetworkToNetworkName,
+} from "@aptos-labs/ts-sdk";
 
 const useWalletConnect = (): WalletConnectReturn => {
   const [walletAvailable, setWalletAvailable] = useState<boolean>(false);
@@ -17,6 +23,10 @@ const useWalletConnect = (): WalletConnectReturn => {
     null
   );
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+
+  const APTOS_NETWORK: Network = NetworkToNetworkName[Network.DEVNET];
+  const config = new AptosConfig({ network: APTOS_NETWORK });
+  const aptos = new Aptos(config);
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.aptos) {
@@ -183,10 +193,40 @@ const useWalletConnect = (): WalletConnectReturn => {
     }
   }, [address, nonce, signedMessage, signMessage]);
 
+  const sendTransaction = async (
+    args: any[],
+    fnc: string,
+    type: string,
+    typeArguments: any[]
+  ): Promise<any> => {
+    const buildTransaction = {
+      arguments: args,
+      function: fnc,
+      type: type,
+      type_arguments: typeArguments,
+    };
+
+    try {
+      const pendingTransaction = await window.aptos.signAndSubmitTransaction(
+        buildTransaction
+      );
+
+      const transaction = await aptos.transaction.waitForTransaction({
+        transactionHash: pendingTransaction.hash,
+      });
+
+      return transaction;
+    } catch (error) {
+      console.error("Error sending transaction:", error);
+      throw new Error("Transaction submission failed.");
+    }
+  };
+
   return {
     walletAvailable,
     connectWallet,
     disconnectWallet,
+    sendTransaction,
     address,
     signedMessage,
     verificationStatus,

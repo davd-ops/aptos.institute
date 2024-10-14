@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
       user.coursesUnlocked = [];
     }
 
+    // Check if the course is already unlocked
     if (user.coursesUnlocked.includes(courseId)) {
       return NextResponse.json(
         { success: false, message: "Course already unlocked" },
@@ -61,17 +62,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (user.balance < price) {
-      return NextResponse.json(
-        { success: false, message: "Insufficient balance" },
-        { status: 400 }
-      );
-    }
-
-    // Deduct the price and unlock the course
-    user.balance -= price;
+    // Unlock the course by adding the courseId to the user's coursesUnlocked array
     user.coursesUnlocked.push(courseId);
 
+    // Save the user document
     await user.save();
 
     return NextResponse.json(
@@ -79,7 +73,6 @@ export async function POST(req: NextRequest) {
         success: true,
         message: "Course unlocked successfully",
         user: {
-          balance: user.balance,
           coursesUnlocked: user.coursesUnlocked,
         },
       },

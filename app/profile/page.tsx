@@ -35,6 +35,7 @@ import { FaXTwitter } from "react-icons/fa6";
 import { useRouter } from "next/navigation";
 import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
+import useWalletConnect from "@/app/hooks/walletConnect";
 
 interface Challenge {
   challengeId: string;
@@ -90,6 +91,8 @@ const Profile = () => {
   const toast = useToast();
   const router = useRouter();
 
+  const { sendTransaction } = useWalletConnect();
+
   const onClose = () => setIsOpen(false);
   const onEditProfileClose = () => setEditProfileOpen(false);
   const onEditProfileOpen = () => setEditProfileOpen(true);
@@ -99,37 +102,86 @@ const Profile = () => {
     setIsOpen(true);
   };
 
+  const fetchQuestTokenBalance = async (address: string) => {
+    try {
+      const response = await fetch("/api/getTokens", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ address }),
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        return data.balance;
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching QUEST token balance:", error);
+      return 0;
+    }
+  };
+
   const handleBuyCourse = async () => {
     if (pendingCourse && profile) {
       if (profile.balance >= pendingCourse.price) {
         try {
-          const response = await fetch("/api/unlockCourse", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              courseId: pendingCourse.courseId,
-              price: pendingCourse.price,
-            }),
-          });
+          const tokenAmount = pendingCourse.price * Math.pow(10, 7);
 
-          const data = await response.json();
+          // Send the transaction using the sendTransaction function
+          const tx = await sendTransaction(
+            [tokenAmount],
+            "0x0f017889b00a39e7c4e292f0c38931695bd4d0d73445fc7a7943994d936b29d0::quest_token::burn",
+            "entry_function_payload",
+            []
+          );
 
-          if (data.success) {
+          // Check if the token burn transaction was successful
+          if (tx.success) {
             toast({
-              title: "Course Unlocked",
-              description: `You have successfully unlocked the course "${pendingCourse.title}".`,
+              title: "Tokens Burned",
+              description: `Successfully burned ${pendingCourse.price} tokens.`,
               status: "success",
               duration: 3000,
               isClosable: true,
               position: "top-right",
             });
 
-            onClose();
-            router.push(`/course/${pendingCourse.courseId}`);
+            // Unlock the course after the burn transaction is successful
+            const unlockResponse = await fetch("/api/unlockCourse", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                courseId: pendingCourse.courseId,
+                price: pendingCourse.price,
+              }),
+            });
+
+            const unlockData = await unlockResponse.json();
+
+            // Check if the course unlock was successful
+            if (unlockData.success) {
+              toast({
+                title: "Course Unlocked",
+                description: `You have successfully unlocked the course "${pendingCourse.title}".`,
+                status: "success",
+                duration: 3000,
+                isClosable: true,
+                position: "top-right",
+              });
+
+              // Navigate to the course page
+              onClose();
+              router.push(`/course/${pendingCourse.courseId}`);
+            } else {
+              throw new Error(unlockData.message);
+            }
           } else {
-            throw new Error(data.message);
+            throw new Error("Transaction failed.");
           }
         } catch (error) {
           toast({
@@ -137,7 +189,7 @@ const Profile = () => {
             description:
               error instanceof Error
                 ? error.message
-                : "Failed to unlock the course.",
+                : "Failed to complete the purchase.",
             status: "error",
             duration: 3000,
             isClosable: true,
@@ -210,7 +262,12 @@ const Profile = () => {
       try {
         const response = await fetch("/api/profile");
         const profileData = await response.json();
-        setProfile(profileData);
+        const questBalance = await fetchQuestTokenBalance(profileData.address);
+
+        setProfile({
+          ...profileData,
+          balance: questBalance,
+        });
         setUserName(profileData.userName);
         setTwitter(profileData.twitter || "");
         setGithub(profileData.github || "");
