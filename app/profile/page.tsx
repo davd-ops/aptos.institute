@@ -308,7 +308,7 @@ const Profile = () => {
             Profile Details
           </Heading>
           <Heading as="h2" size="xl" color="white">
-            On-Chain CV
+            On-Chain Resume
           </Heading>
         </Flex>
 
@@ -343,7 +343,7 @@ const Profile = () => {
               </Box>
               <Box>
                 <Text fontSize="lg" fontWeight="bold">
-                  Institute Token Balance:
+                  Quest Token Balance:
                 </Text>
                 <Text>{profile?.balance} Tokens</Text>
               </Box>
