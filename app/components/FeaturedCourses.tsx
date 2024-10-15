@@ -240,7 +240,7 @@ const FeaturedCourses = () => {
     );
   }
 
-  const { title, description, imageUrl } = featuredCourses[currentIndex];
+  const { title, description } = featuredCourses[currentIndex];
 
   const variants = {
     enter: (direction: number) => ({

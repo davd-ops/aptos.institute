@@ -6,7 +6,6 @@ import {
   Avatar,
   Heading,
   Text,
-  VStack,
   HStack,
   Divider,
   Link,
@@ -146,10 +145,9 @@ const HirePage = () => {
         {/* Search bar */}
         <Stack direction={{ base: "column", md: "row" }} spacing={4} mb={6}>
           <InputGroup maxW="400px">
-            <InputLeftElement
-              pointerEvents="none"
-              children={<FaSearch color="gray.300" />}
-            />{" "}
+            <InputLeftElement pointerEvents="none">
+              <FaSearch color="gray.300" />
+            </InputLeftElement>
             <Input
               type="text"
               placeholder="Search by name or wallet"
