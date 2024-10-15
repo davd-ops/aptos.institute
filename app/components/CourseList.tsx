@@ -44,8 +44,8 @@ const filters = [
   "Intermediate",
   "Advanced",
   "Blockchain",
-  "Smart Contracts",
-  "Scalability",
+  "Fungible Assets",
+  "Digital Assets",
   "dApps",
   "Security",
   "Cross-Chain",
@@ -316,24 +316,27 @@ const CourseList = () => {
           return (
             <Flex
               key={course._id}
-              direction={{ base: "column", md: "row" }}
+              direction="column"
               bg="gray.900"
               p={8}
               borderRadius="xl"
               justify="space-between"
-              align="center"
+              align="start"
+              w="100%"
             >
-              <VStack
-                align="start"
-                flex={1}
-                color="white"
-                spacing={6}
-                maxW={{ base: "100%", md: "60%" }}
-              >
+              {/* Course Title, Description, and Tags */}
+              <VStack align="start" flex={1} color="white" spacing={6} w="100%">
+                {/* Title */}
                 <Heading as="h3" size="lg">
                   {course.title}
                 </Heading>
-                <Text fontSize="md">{course.description}</Text>
+
+                {/* Description */}
+                <Text fontSize="md" color="gray.300">
+                  {course.description}
+                </Text>
+
+                {/* Tags */}
                 <HStack wrap="wrap" spacing={4}>
                   {course.tags.map((tag) => (
                     <Text key={tag} fontSize="sm" color="gray.500">
@@ -341,11 +344,15 @@ const CourseList = () => {
                     </Text>
                   ))}
                 </HStack>
+
+                {/* Price, Rewards, and Challenges Info */}
                 <Flex
                   direction={{ base: "column", md: "row" }}
                   align="start"
                   gap={6}
+                  w="100%"
                 >
+                  {/* Price */}
                   <Tooltip
                     label="Price of the course"
                     aria-label="Price Tooltip"
@@ -367,6 +374,8 @@ const CourseList = () => {
                       </Text>
                     </HStack>
                   </Tooltip>
+
+                  {/* Rewards */}
                   <Tooltip
                     label="A reward for completing the course"
                     aria-label="Rewards Tooltip"
@@ -388,6 +397,8 @@ const CourseList = () => {
                       </Text>
                     </HStack>
                   </Tooltip>
+
+                  {/* Total Challenges */}
                   <HStack align="center" spacing={2}>
                     <Box
                       bg="blue.500"
@@ -405,6 +416,8 @@ const CourseList = () => {
                     </Text>
                   </HStack>
                 </Flex>
+
+                {/* Progress Bar */}
                 {isLoggedIn && (
                   <Box w="100%">
                     <Progress
@@ -418,22 +431,18 @@ const CourseList = () => {
                     </Text>
                   </Box>
                 )}
+
+                {/* Start Course Button */}
                 <Button
                   colorScheme="teal"
                   size="md"
+                  w="50%"
+                  alignSelf="center"
                   onClick={() => handleStartCourse(course)}
                 >
                   Start Now
                 </Button>
               </VStack>
-
-              <Box flex={1} textAlign="center" maxW="200px" p={4}>
-                <img
-                  src={course.imageUrl}
-                  alt={course.title}
-                  style={{ maxHeight: "150px", objectFit: "cover" }}
-                />
-              </Box>
             </Flex>
           );
         })}

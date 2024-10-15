@@ -132,7 +132,7 @@ const HirePage = () => {
         <Heading
           mb={6}
           textAlign="center"
-          color="gray.800"
+          color="gray.100"
           fontSize="3xl"
           fontWeight="bold"
         >
@@ -142,13 +142,18 @@ const HirePage = () => {
         {/* Search bar */}
         <Stack direction={{ base: "column", md: "row" }} spacing={4} mb={6}>
           <InputGroup maxW="400px">
-            <InputLeftElement pointerEvents="none" children={<FaSearch />} />
+            <InputLeftElement
+              pointerEvents="none"
+              children={<FaSearch color="gray.300" />}
+            />{" "}
             <Input
               type="text"
               placeholder="Search by name or wallet"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               color="white"
+              bg="gray.600"
+              _placeholder={{ color: "gray.400" }}
             />
           </InputGroup>
 
@@ -158,7 +163,6 @@ const HirePage = () => {
               <Button
                 key={count}
                 colorScheme={selectedFilters.includes(count) ? "teal" : "gray"}
-                onClick={() => toggleFilter(count)}
               >
                 {count}
               </Button>
@@ -178,20 +182,23 @@ const HirePage = () => {
               boxShadow="md"
               borderRadius="lg"
               borderWidth="1px"
-              borderColor="gray.200"
-              bg="white"
+              borderColor="gray.600"
+              bg="gray.700"
               transition="all 0.3s"
               _hover={{ boxShadow: "lg", transform: "scale(1.02)" }}
+              alignSelf="start"
             >
               {/* User Details with Socials next to name */}
               <Flex justify="space-between" alignItems="center" mb={4}>
                 <HStack spacing={4}>
                   <Avatar name={user.userName} size="lg" bg="teal.500" />
                   <Box>
-                    <Heading size="md" color="gray.700">
+                    <Heading size="md" color="white">
+                      {" "}
                       {user.userName}
                     </Heading>
-                    <Text color="gray.500" fontSize="sm">
+                    <Text color="gray.300" fontSize="sm">
+                      {" "}
                       {shortAddress(user.address)}
                     </Text>
                   </Box>
@@ -202,12 +209,12 @@ const HirePage = () => {
                       href={`https://twitter.com/${user.twitter}`}
                       isExternal
                     >
-                      <FaTwitter size="24" />
+                      <FaTwitter size="24" color="gray.300" />{" "}
                     </Link>
                   )}
                   {user.github && (
                     <Link href={`https://github.com/${user.github}`} isExternal>
-                      <FaGithub size="24" />
+                      <FaGithub size="24" color="gray.300" />{" "}
                     </Link>
                   )}
                   {user.website && (
@@ -219,18 +226,17 @@ const HirePage = () => {
                       }
                       isExternal
                     >
-                      <FaGlobe size="24" />
+                      <FaGlobe size="24" color="gray.300" />{" "}
                     </Link>
                   )}
                 </HStack>
               </Flex>
-
               {/* Divider */}
-              <Divider my={4} />
-
+              <Divider my={4} borderColor="gray.500" />{" "}
               {/* Courses Completed Section */}
               <Box>
-                <Text fontWeight="bold" fontSize="lg" color="gray.600" mb={2}>
+                <Text fontWeight="bold" fontSize="lg" color="white" mb={2}>
+                  {" "}
                   Courses Completed: {user.coursesCompleted?.length || 0}
                 </Text>
 
@@ -241,35 +247,40 @@ const HirePage = () => {
                       <h2>
                         <AccordionButton>
                           <Box flex="1" textAlign="left">
-                            <Text fontWeight="semibold" color="gray.700">
+                            <Text fontWeight="semibold" color="white">
+                              {" "}
                               {course.courseTitle}
                             </Text>
-                            <Text fontSize="sm" color="gray.500">
+                            <Text fontSize="sm" color="gray.400">
+                              {" "}
                               Score: {course.score || 0}
                             </Text>
                           </Box>
-                          <AccordionIcon />
+                          <AccordionIcon color="white" />{" "}
                         </AccordionButton>
                       </h2>
                       <AccordionPanel pb={4}>
                         {course.challenges && course.challenges.length > 0 ? (
                           course.challenges.map((challenge) => (
                             <Box key={challenge.challengeId} mb={3}>
-                              <Text fontWeight="bold" color="teal.500">
-                                Challenge: {challenge.name}
+                              <Text fontWeight="bold" color="teal.300">
+                                {" "}
+                                {challenge.name}
                               </Text>
-                              <Text fontSize="sm" color="gray.600">
+                              <Text fontSize="sm" color="gray.300">
+                                {" "}
                                 Attempts: {challenge.attempts} | Hints Used:{" "}
                                 {challenge.hintsUsed} |{" "}
                                 {challenge.completed
                                   ? "Completed"
                                   : "Incomplete"}
                               </Text>
-                              <Divider my={2} />
+                              <Divider my={2} borderColor="gray.500" />{" "}
                             </Box>
                           ))
                         ) : (
-                          <Text color="gray.500" fontSize="sm">
+                          <Text color="gray.400" fontSize="sm">
+                            {" "}
                             No challenges data available.
                           </Text>
                         )}

@@ -302,7 +302,7 @@ const FeaturedCourses = () => {
         style={{ height: "100%", width: "100%" }}
       >
         <Flex
-          direction={{ base: "column", md: "row" }}
+          direction="column"
           h="100%"
           align="center"
           justify="center"
@@ -316,43 +316,31 @@ const FeaturedCourses = () => {
             spacing={4}
             align="start"
             flex={1}
-            maxW={{ base: "100%", md: "50%" }}
+            maxW={{ base: "100%", md: "80%" }}
             px={{ base: 0, md: 10 }}
             color="white"
+            textAlign={{ base: "center", md: "left" }}
           >
-            <Heading
-              as="h3"
-              size="xl"
-              mb={4}
-              fontWeight="bold"
-              textAlign="left"
-            >
+            {/* Title */}
+            <Heading as="h3" size="xl" mb={4} fontWeight="bold">
               {title}
             </Heading>
-            <Text fontSize="lg" mb={4} textAlign="left">
+
+            {/* Description */}
+            <Text fontSize="lg" mb={4}>
               {description}
             </Text>
+
+            {/* Start Now Button */}
             <Button
               colorScheme="teal"
               size="lg"
+              alignSelf={{ base: "center", md: "start" }}
               onClick={() => handleStartCourse(featuredCourses[currentIndex])}
             >
               Start Now
             </Button>
           </VStack>
-
-          <Box flex={1} textAlign="center" p={4}>
-            <img
-              src={imageUrl}
-              alt={title}
-              style={{
-                maxHeight: "250px",
-                maxWidth: "100%",
-                objectFit: "cover",
-                margin: "0 auto",
-              }}
-            />
-          </Box>
         </Flex>
       </motion.div>
 

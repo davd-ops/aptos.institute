@@ -210,14 +210,29 @@ const Challenge: React.FC<ChallengeProps> = ({
             {name}
           </Heading>
           <Box>
-            <Text mb={4} color="white">
-              {explanation}
-            </Text>
+            <Text
+              mb={4}
+              color="white"
+              dangerouslySetInnerHTML={{ __html: explanation }}
+            />
 
             <Heading as="h3" size="md" mt={8} mb={4} color="white">
               Your Task:
             </Heading>
-            <Text color="white">{task}</Text>
+            <Text
+              color="white"
+              p={4}
+              dangerouslySetInnerHTML={{ __html: task }}
+              sx={{
+                ul: {
+                  paddingLeft: "1.5rem",
+                  marginBottom: "1rem",
+                },
+                li: {
+                  marginBottom: "0.5rem",
+                },
+              }}
+            />
           </Box>
         </Box>
         <Box
