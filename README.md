@@ -56,4 +56,4 @@ As an open-source public good project, we also aim to crowd-source materials fro
 
 Developers are incentivized to go through a gamified hands-on curriculum, Companies benefit from hiring talent with verifiable, on-chain resumes, and the Aptos Ecosystem thrives!
 
-Check out our [Showcase Video](https://youtu.be/KlSVvBhyJRA) for more details.
+Check out our [Showcase Video](https://www.youtube.com/watch?v=KlSVvBhyJRA) for more details.
