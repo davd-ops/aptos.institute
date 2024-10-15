@@ -100,7 +100,7 @@ export async function getDeveloperResumeTokenAddress(
   const developerResumeToken = tokens.find(
     (token) =>
       token.current_token_data?.collection_id ===
-      "0xb63590536f388b1ed8d12a1858dc51a76161afcfabb8e780f249c61de853f872"
+      "0xb8954db93f527da1979fee4d156575fbfa592fdcdeea3f09e5f41e165b08f80a"
   );
 
   if (!developerResumeToken) {
