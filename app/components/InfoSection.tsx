@@ -1,17 +1,21 @@
-import { Box, Flex, Heading, Text, VStack, Image } from "@chakra-ui/react";
+import { Box, Flex, Heading, Text, VStack } from "@chakra-ui/react";
 
 const InfoSection = () => {
   return (
-    <Box color="white" py={20} px={8}>
+    <Box color="white" py={20} px={8} bg="gray.800">
       <VStack spacing={20} maxW="1200px" mx="auto">
+        {/* Section 1 */}
         <Flex
           direction={{ base: "column", md: "row" }}
           align="center"
           justify="space-between"
           w="100%"
+          bg="gray.900"
+          p={8}
+          borderRadius="lg"
         >
           <VStack align="flex-start" spacing={6} flex={1}>
-            <Heading as="h2" size="xl">
+            <Heading as="h2" size="xl" color="teal.300">
               Earn Points and Build Your On-Chain Resume
             </Heading>
             <Text fontSize="lg">
@@ -21,25 +25,20 @@ const InfoSection = () => {
               ecosystem.
             </Text>
           </VStack>
-
-          <Box flex={1} mt={{ base: 10, md: 0 }} textAlign="center">
-            <Image
-              src="/images/aptos.png"
-              alt="Earn Points"
-              maxH="300px"
-              objectFit="contain"
-            />
-          </Box>
         </Flex>
 
+        {/* Section 2 */}
         <Flex
           direction={{ base: "column", md: "row-reverse" }}
           align="center"
           justify="space-between"
           w="100%"
+          bg="gray.900"
+          p={8}
+          borderRadius="lg"
         >
           <VStack align="flex-start" spacing={6} flex={1}>
-            <Heading as="h2" size="xl">
+            <Heading as="h2" size="xl" color="teal.300">
               Hands-On Learning Tailored for Aptos
             </Heading>
             <Text fontSize="lg">
@@ -48,25 +47,20 @@ const InfoSection = () => {
               that help you build confidence in blockchain development.
             </Text>
           </VStack>
-
-          <Box flex={1} mt={{ base: 10, md: 0 }} textAlign="center">
-            <Image
-              src="/images/aptos.png"
-              alt="Hands-On Learning"
-              maxH="300px"
-              objectFit="contain"
-            />
-          </Box>
         </Flex>
 
+        {/* Section 3 */}
         <Flex
           direction={{ base: "column", md: "row" }}
           align="center"
           justify="space-between"
           w="100%"
+          bg="gray.900"
+          p={8}
+          borderRadius="lg"
         >
           <VStack align="flex-start" spacing={6} flex={1}>
-            <Heading as="h2" size="xl">
+            <Heading as="h2" size="xl" color="teal.300">
               Find Your Place in the Aptos Ecosystem
             </Heading>
             <Text fontSize="lg">
@@ -76,15 +70,6 @@ const InfoSection = () => {
               space!
             </Text>
           </VStack>
-
-          <Box flex={1} mt={{ base: 10, md: 0 }} textAlign="center">
-            <Image
-              src="/images/aptos.png"
-              alt="Find Jobs"
-              maxH="300px"
-              objectFit="contain"
-            />
-          </Box>
         </Flex>
       </VStack>
     </Box>

@@ -258,7 +258,7 @@ const FeaturedCourses = () => {
   };
 
   return (
-    <Box position="relative" w="100%" h="600px" overflow="hidden" py={16}>
+    <Box position="relative" w="100%" h="400px" overflow="hidden" py={16}>
       <IconButton
         aria-label="Previous Course"
         icon={<ChevronLeftIcon />}
@@ -308,7 +308,6 @@ const FeaturedCourses = () => {
           justify="center"
           textAlign="center"
           p={8}
-          bg="gray.800"
           mx="auto"
           maxW="1200px"
         >
@@ -333,7 +332,9 @@ const FeaturedCourses = () => {
 
             {/* Start Now Button */}
             <Button
-              colorScheme="teal"
+              bg="teal.400"
+              color="white"
+              _hover={{ bg: "teal.300" }}
               size="lg"
               alignSelf={{ base: "center", md: "start" }}
               onClick={() => handleStartCourse(featuredCourses[currentIndex])}

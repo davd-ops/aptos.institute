@@ -22,10 +22,7 @@ Helping developers learn Aptos! Made with ❤️ for Aptos Code Collision Hackat
 * Token-based rewards tied to performance in courses
 * Unlocking advanced courses by burning tokens
 * Soulbound NFTs with dynamic metadata that evolves as users progress
-* Currently Live courses:
-    * Aptos Beginner Class
-    * Move Master Class
-    * Security Best Practises
+* Hiring platform
 
 ## Overview
 

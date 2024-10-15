@@ -94,7 +94,11 @@ const HirePage = () => {
 
       const meetsCourseFilter =
         selectedFilters.length === 0 ||
-        selectedFilters.includes(user.coursesCompleted.length);
+        (selectedFilters.length === 1
+          ? user.coursesCompleted.length === selectedFilters[0]
+          : selectedFilters.some(
+              (filter) => user.coursesCompleted.length >= filter
+            ));
 
       return matchesSearch && meetsCourseFilter;
     });
@@ -163,6 +167,7 @@ const HirePage = () => {
               <Button
                 key={count}
                 colorScheme={selectedFilters.includes(count) ? "teal" : "gray"}
+                onClick={() => toggleFilter(count)}
               >
                 {count}
               </Button>

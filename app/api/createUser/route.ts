@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       // Mint the developer resume NFT for the new user
       const description = "Developer Resume for Aptos Courses";
       const name = `Developer Resume ${userCount}`;
-      const baseUri = "https://tbd.com/resume/";
+      const baseUri = "https://aptos-institute.vercel.app/resume/";
 
       const transactionHash = await mintResume(
         description,
