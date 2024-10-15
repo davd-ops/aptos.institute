@@ -13,4 +13,4 @@
     subdir = 'aptos-move/framework/aptos-token-objects'
 
     [addresses]
-    AptosInstitute="0xa3f48786a76ae4ff20906ab4c71147c70f741329ba417cbc9583b7ef5cf452d5"
+    AptosInstitute="0xd230d19a81aa24f6c8a3ff72b309186a331d2d62821a2b903d8870bda851cf5b"

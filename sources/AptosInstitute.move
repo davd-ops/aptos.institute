@@ -21,7 +21,7 @@ module AptosInstitute::developer_resume {
     /// The resume collection description
     const COLLECTION_DESCRIPTION: vector<u8> = b"Dynamic Developer Resume NFT";
     /// The resume collection URI
-    const COLLECTION_URI: vector<u8> = b"https://developer-resume-uri.com";
+    const COLLECTION_URI: vector<u8> = b"https://aptos-institute.vercel.app/collection";
 
     /// Developer ranks based on completed courses
     const RANK_BEGINNER: vector<u8> = b"Beginner";
@@ -169,7 +169,7 @@ module AptosInstitute::developer_resume {
         token::burn(burn_ref);
     }
 
-        /// Function to sum the elements of a vector<u64>
+    /// Function to sum the elements of a vector<u64>
     fun sum_vector(scores: &vector<u64>): u64 {
         let total: u64 = 0;
         let length = vector::length(scores);

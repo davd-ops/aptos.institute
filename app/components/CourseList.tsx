@@ -182,7 +182,7 @@ const CourseList = () => {
           // Send the transaction using the sendTransaction function
           const tx = await sendTransaction(
             [tokenAmount],
-            "0x0f017889b00a39e7c4e292f0c38931695bd4d0d73445fc7a7943994d936b29d0::quest_token::burn",
+            "0xd230d19a81aa24f6c8a3ff72b309186a331d2d62821a2b903d8870bda851cf5b::quest_token::burn",
             "entry_function_payload",
             []
           );
@@ -437,7 +437,6 @@ const CourseList = () => {
                   colorScheme="teal"
                   size="md"
                   w="50%"
-                  alignSelf="center"
                   onClick={() => handleStartCourse(course)}
                 >
                   Start Now
